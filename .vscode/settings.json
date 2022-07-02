@@ -1,0 +1,10 @@
+{
+    "editor.detectIndentation": false,
+    "[dart]": {
+        "editor.defaultFormatter": "Dart-Code.dart-code",
+        "editor.formatOnSave": false,
+        "editor.guides.indentation": true,
+        "editor.autoIndent": "full",
+        "editor.tabSize": 4
+     },
+}
