@@ -25,8 +25,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   FlutterWindow window(project);
-  Win32Window::Point origin(10, 10);
-  Win32Window::Size size(1280, 720);
+  Win32Window::Point origin((GetSystemMetrics(SM_CXSCREEN) / 4), (GetSystemMetrics(SM_CYSCREEN) / 6)); // make app at "hardcoded center" of the monitor
+  Win32Window::Size size(900, 720); //was originally 1280, 720
   if (!window.CreateAndShow(L"cf_tracker", origin, size)) {
     return EXIT_FAILURE;
   }

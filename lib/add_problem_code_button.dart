@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:popup_card/popup_card.dart';
+import 'package:http/http.dart' as http;
 
 import 'custom_rect_tween.dart';
 import 'hero_dialog_route.dart';
+import 'globals.dart' as globals;
 
 /// Tag-value used for the add problem-code popup button.
 const String _heroAddProblem = 'add-problem-code-hero';
@@ -20,14 +21,14 @@ class AddProblemCodeButton extends StatelessWidget {
 
     @override
     Widget build(BuildContext context) {
-        return MouseRegion( // to change mouse from couser to pointer when hovering
-            cursor: SystemMouseCursors.click, // <---||
-            child: Padding(
-                padding: const EdgeInsets.all(32.0), // makes the button not extremely at the bottom-right of the app's UI
+        return Padding(
+            padding: const EdgeInsets.all(32.0), // makes the button not extremely at the bottom-right of the app's UI
+            child: MouseRegion( // to change mouse from couser to pointer when hovering, source: https://www.youtube.com/watch?v=1oF3pI5umck
+                cursor: SystemMouseCursors.click, // <---||
                 child: GestureDetector(
                 onTap: () {
                     Navigator.of(context).push(HeroDialogRoute(builder: (context) {
-                        return const _AddProblemCodePopupCard();
+                        return _AddProblemCodePopupCard();
                     }));
                 },
                 child: Hero(
@@ -52,7 +53,7 @@ class AddProblemCodeButton extends StatelessWidget {
                         ),
                     ),
                 ),
-            )
+            ),
         );
     }
 }
@@ -65,12 +66,14 @@ class AddProblemCodeButton extends StatelessWidget {
 /// {@endtemplate}
 class _AddProblemCodePopupCard extends StatelessWidget {
     /// {@macro add_problem_code_popup_card}
-    const _AddProblemCodePopupCard({Key? key}) : super(key: key);
+    _AddProblemCodePopupCard({Key? key}) : super(key: key);
+    final myTextController1 = TextEditingController(); // for fetching problem code from top text field
+    final myTextController2 = TextEditingController(); // for fetching problem type from bottom text field
     @override
     Widget build(BuildContext context) {
         return Center(
-            child: Padding(
-                padding: const EdgeInsets.all(32.0),
+            child: SizedBox(
+                width: MediaQuery.of(context).size.width / 3,
                 child: Hero(
                     tag: _heroAddProblem,
                     createRectTween: (begin, end) {
@@ -82,36 +85,46 @@ class _AddProblemCodePopupCard extends StatelessWidget {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
                         child: SingleChildScrollView(
                             child: Padding(
-                                padding: const EdgeInsets.all(16.0),
+                                padding: const EdgeInsets.all(16.0), // padding between all child elements and parent container (card)
                                 child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                        const TextField(
-                                            decoration: InputDecoration(
-                                                hintText: 'New problem',
-                                                border: InputBorder.none,
+                                        TextField( // text fields look source: https://www.javatpoint.com/flutter-textfield
+                                            controller: myTextController1,
+                                            decoration: const InputDecoration(
+                                                border: OutlineInputBorder(),  
+                                                labelText: 'Problem Code',  
+                                                hintText: 'Enter problem code (found in url)',  
                                             ),
-                                            cursorColor: Colors.white,
                                         ),
                                         const Divider(
                                             color: Colors.white,
-                                            thickness: 0.2,
+                                            thickness: 0.4,
                                         ),
-                                        const TextField(
-                                            decoration: InputDecoration(
-                                                hintText: 'Write a note',
-                                                border: InputBorder.none,
+                                        TextField(
+                                            controller: myTextController2,
+                                            decoration: const InputDecoration(
+                                                border: OutlineInputBorder(),  
+                                                labelText: 'Problem Level',  
+                                                hintText: 'Enter Problem level (A,B,C,...)',  
                                             ),
                                             cursorColor: Colors.white,
-                                            maxLines: 6,
+                                            maxLines: 2,
                                         ),
                                         const Divider(
                                             color: Colors.white,
-                                            thickness: 0.2,
+                                            thickness: 0.4,
                                         ),
                                         ElevatedButton(
-                                            onPressed: () {},
-                                            child: const Text('Add'),
+                                            onPressed: () {
+                                                globals.problemNameCard = true;
+                                                Navigator.pop(context); // closes card
+                                                // logic to fetch problem name
+                                                String code = myTextController1.text;
+                                                String type = myTextController2.text;
+                                                getProblemName(link: "https://codeforces.com/problemset/problem/$code/$type");
+                                            },
+                                            child: const Text('Track'),
                                         ),
                                     ],
                                 ),
@@ -122,4 +135,14 @@ class _AddProblemCodePopupCard extends StatelessWidget {
             ),
         );
     }
+}
+
+Future<String> getProblemName({required String link}) async{
+    var response = await http.get(Uri.parse(link));
+    if(response.statusCode != 200){
+        return "-1";
+    }
+    String htmlToParse = response.body;
+    print(htmlToParse); // TO DO: CHANGE LOGIC TO FETCH AND RETURN NAME!
+    return htmlToParse;
 }
