@@ -9,7 +9,7 @@ import 'globals.dart' as globals; // use of globals using a "globals" file: http
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   if (Platform.isWindows) {
-    setWindowTitle('cf_tracker');
+    setWindowTitle('cf_time_tracker');
     //double minWidth = 800, minHeight = 720;
     //setWindowMaxSize(const Size(max_width, max_height));
     //setWindowMinSize(Size(minWidth, minHeight));
@@ -22,11 +22,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'cf_time_tracker',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'Problem Details'),
     );
   }
 }
@@ -139,41 +139,49 @@ class _MyHomePageState extends State<MyHomePage> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    primary: Colors.green,
+                    primary: Colors.blueGrey,
                   ), // finish button
-                  child: const Icon(Icons.check),
+                  child: const Icon(Icons.restart_alt_rounded)
                 ),
               ],
             )),
             const SizedBox(height: 30),
-            if (globals.problemNameCard) SizedBox( // the if() makes the problem name card not visible unless "track" button is pressed
-                child: Material(
-                    color: Colors.white,
-                    elevation: 5,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(32)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(children: [
-                        const Text(
-                          "PROBLEM NAME",
-                          style: TextStyle(fontSize: 20, color: Colors.black),
-                        ),
-                        const SizedBox(
-                            height:
-                                15), // space between problem name and check mark
-                        ElevatedButton(
-                          // finish button
-                          onPressed: () {
-                            
-                          },
-                          style: ElevatedButton.styleFrom(
-                            primary: Colors.green,
-                          ), // finish button
-                          child: const Icon(Icons.check),
-                        ),
-                      ]),
-                    )))
+            ValueListenableBuilder( // Class that enables changes on returned widget to appear in the UI if a valueListenable changes, source: https://stackoverflow.com/questions/62007967/updating-a-widget-when-a-global-variable-changes-async-in-flutter
+                valueListenable: globals.problemNameCard,
+                builder: (context, value, widget) {
+                    return Visibility(
+                        visible: globals.problemNameCard.value,
+                        child: SizedBox( // the if() makes the problem name card not visible unless "track" button is pressed
+                          child: Material(
+                              color: Colors.white,
+                              elevation: 5,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(32)),
+                              child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(children: [
+                                  Text(
+                                      globals.problemName,
+                                      style: const TextStyle(fontSize: 20, color: Colors.black),
+                                  ),
+                                  const SizedBox(
+                                      height:
+                                          15), // space between problem name and check mark
+                                  ElevatedButton(
+                                      // finish button
+                                      onPressed: () {
+                                        // To-do: make custom card to get solution code 
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                      primary: Colors.green,
+                                      ), // finish button
+                                      child: const Icon(Icons.check),
+                                  ),
+                                  ]),
+                        ))),
+                    );
+                }
+            )
           ]),
         ));
   }
@@ -223,7 +231,11 @@ Widget _buildCard({required CardItem item, required _MyHomePageState app}) {
           onPressed: () {
             app.startOneTimer(id: item.id);
           },
-          child: const Text("Start"),
+          style: ElevatedButton.styleFrom(
+            shape: const CircleBorder(),
+            padding: const EdgeInsets.all(14),
+          ),
+          child: const Icon(Icons.play_arrow_outlined)
         )
       ]),
     ),

@@ -116,13 +116,37 @@ class _AddProblemCodePopupCard extends StatelessWidget {
                                             thickness: 0.4,
                                         ),
                                         ElevatedButton(
-                                            onPressed: () {
-                                                globals.problemNameCard = true;
-                                                Navigator.pop(context); // closes card
+                                            onPressed: () async {
                                                 // logic to fetch problem name
                                                 String code = myTextController1.text;
                                                 String type = myTextController2.text;
-                                                getProblemName(link: "https://codeforces.com/problemset/problem/$code/$type");
+                                                print("startt");
+                                                String newProb = await getProblemName(link: "https://codeforces.com/problemset/problem/$code/$type");
+                                                print("endd");
+                                                if (newProb == "-1" || newProb == "-2") {
+                                                    return showDialog(
+                                                            context: context, 
+                                                            builder: (BuildContext context) => AlertDialog(
+                                                                title: const Text('Error'),
+                                                                content:  Text(
+                                                                    newProb == "-1" ?
+                                                                    "No internet connection"
+                                                                    : "Problem not found"
+                                                                    ),
+                                                                actions: [
+                                                                    TextButton(
+                                                                        onPressed: () => Navigator.pop(context, 'OK'),
+                                                                        child: const Text('OK'),
+                                                                    ),
+                                                                ],
+                                                            )
+                                                        );
+                                                }
+                                                else{
+                                                    globals.problemNameCard.value = true;
+                                                    globals.problemName = newProb;
+                                                    Navigator.pop(context); // closes card
+                                                }
                                             },
                                             child: const Text('Track'),
                                         ),
@@ -138,11 +162,19 @@ class _AddProblemCodePopupCard extends StatelessWidget {
 }
 
 Future<String> getProblemName({required String link}) async{
+    print("start");
     var response = await http.get(Uri.parse(link));
+    print("done");
     if(response.statusCode != 200){
+        print("-1");
         return "-1";
     }
     String htmlToParse = response.body;
-    print(htmlToParse); // TO DO: CHANGE LOGIC TO FETCH AND RETURN NAME!
-    return htmlToParse;
+    RegExp regex = RegExp(r'<div class="title">([^<]*)</div>');
+    if (!regex.hasMatch(htmlToParse)){
+        print("-2");
+        return "-2";
+    }
+    print(regex.firstMatch(htmlToParse)!.groups([1])[0]!);
+    return regex.firstMatch(htmlToParse)!.groups([1])[0]!;
 }
