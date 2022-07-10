@@ -120,9 +120,7 @@ class _AddProblemCodePopupCard extends StatelessWidget {
                                                 // logic to fetch problem name
                                                 String code = myTextController1.text;
                                                 String type = myTextController2.text;
-                                                print("startt");
                                                 String newProb = await getProblemName(link: "https://codeforces.com/problemset/problem/$code/$type");
-                                                print("endd");
                                                 if (newProb == "-1" || newProb == "-2") {
                                                     return showDialog(
                                                             context: context, 

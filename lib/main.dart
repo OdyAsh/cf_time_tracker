@@ -147,7 +147,7 @@ class _MyHomePageState extends State<MyHomePage> {
             )),
             const SizedBox(height: 30),
             ValueListenableBuilder( // Class that enables changes on returned widget to appear in the UI if a valueListenable changes, source: https://stackoverflow.com/questions/62007967/updating-a-widget-when-a-global-variable-changes-async-in-flutter
-                valueListenable: globals.problemNameCard,
+                valueListenable: globals.problemNameCard, // note: search term used to know this info: "refresh when a variable changes flutter"
                 builder: (context, value, widget) {
                     return Visibility(
                         visible: globals.problemNameCard.value,
