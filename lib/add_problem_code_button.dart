@@ -67,8 +67,8 @@ class AddProblemCodeButton extends StatelessWidget {
 class _AddProblemCodePopupCard extends StatelessWidget {
     /// {@macro add_problem_code_popup_card}
     _AddProblemCodePopupCard({Key? key}) : super(key: key);
-    final myTextController1 = TextEditingController(); // for fetching problem code from top text field
-    final myTextController2 = TextEditingController(); // for fetching problem type from bottom text field
+    final _myTextController1 = TextEditingController(); // for fetching problem code from top text field
+    final _myTextController2 = TextEditingController(); // for fetching problem type from bottom text field
     @override
     Widget build(BuildContext context) {
         return Center(
@@ -90,7 +90,7 @@ class _AddProblemCodePopupCard extends StatelessWidget {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                         TextField( // text fields look source: https://www.javatpoint.com/flutter-textfield
-                                            controller: myTextController1,
+                                            controller: _myTextController1,
                                             decoration: const InputDecoration(
                                                 border: OutlineInputBorder(),  
                                                 labelText: 'Problem Code',  
@@ -102,13 +102,13 @@ class _AddProblemCodePopupCard extends StatelessWidget {
                                             thickness: 0.4,
                                         ),
                                         TextField(
-                                            controller: myTextController2,
+                                            controller: _myTextController2,
                                             decoration: const InputDecoration(
                                                 border: OutlineInputBorder(),  
                                                 labelText: 'Problem Level',  
                                                 hintText: 'Enter Problem level (A,B,C,...)',  
                                             ),
-                                            cursorColor: Colors.white,
+                                            cursorColor: Colors.blue,
                                             maxLines: 2,
                                         ),
                                         const Divider(
@@ -118,8 +118,8 @@ class _AddProblemCodePopupCard extends StatelessWidget {
                                         ElevatedButton(
                                             onPressed: () async {
                                                 // logic to fetch problem name
-                                                String code = myTextController1.text;
-                                                String type = myTextController2.text;
+                                                String code = _myTextController1.text;
+                                                String type = _myTextController2.text;
                                                 String newProb = await getProblemName(link: "https://codeforces.com/problemset/problem/$code/$type");
                                                 if (newProb == "-1" || newProb == "-2") {
                                                     return showDialog(
@@ -160,19 +160,14 @@ class _AddProblemCodePopupCard extends StatelessWidget {
 }
 
 Future<String> getProblemName({required String link}) async{
-    print("start");
     var response = await http.get(Uri.parse(link));
-    print("done");
     if(response.statusCode != 200){
-        print("-1");
         return "-1";
     }
     String htmlToParse = response.body;
     RegExp regex = RegExp(r'<div class="title">([^<]*)</div>');
     if (!regex.hasMatch(htmlToParse)){
-        print("-2");
         return "-2";
     }
-    print(regex.firstMatch(htmlToParse)!.groups([1])[0]!);
     return regex.firstMatch(htmlToParse)!.groups([1])[0]!;
 }

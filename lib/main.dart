@@ -38,8 +38,16 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+enum ByYourself { YES, NO}
+
 class _MyHomePageState extends State<MyHomePage> {
   final isDialOpen = ValueNotifier(false); // redundant logic, as the speed dial buttons are not used anymore in this project
+  final _myTextController1 = TextEditingController(); // to fetch problem solution code
+  final _myTextController2 = TextEditingController(); // to fetch difficulty level
+  final _myTextController3 = TextEditingController(); // to fetch comment about the problem
+  bool _solutionCodeCard = false;
+  int? _dateFormatVal;
+  ByYourself? _byYourself = ByYourself.YES;
   List<CardItem> items = [
     CardItem(id: 0, solvingStage: "Reading", timer: StopWatchTimer()),
     CardItem(id: 1, solvingStage: "Thinking", timer: StopWatchTimer()),
@@ -65,6 +73,11 @@ class _MyHomePageState extends State<MyHomePage> {
             .add(StopWatchExecute.stop); // pauses other stopwatches
       }
     }
+  }
+
+  void storeInfo(CFProblem cf) {
+    // to do outside this function: button to add google sheet id
+    // to do: connect the sheets api here and take all object attributes to sheets
   }
 
   @override
@@ -152,31 +165,193 @@ class _MyHomePageState extends State<MyHomePage> {
                     return Visibility(
                         visible: globals.problemNameCard.value,
                         child: SizedBox( // the if() makes the problem name card not visible unless "track" button is pressed
+                          width: 400,
                           child: Material(
                               color: Colors.white,
                               elevation: 5,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(32)),
                               child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
+                                  padding: const EdgeInsets.all(18.0),
                                   child: Column(children: [
                                   Text(
                                       globals.problemName,
                                       style: const TextStyle(fontSize: 20, color: Colors.black),
+                                      textAlign: TextAlign.center,
                                   ),
                                   const SizedBox(
                                       height:
-                                          15), // space between problem name and check mark
-                                  ElevatedButton(
-                                      // finish button
-                                      onPressed: () {
-                                        // To-do: make custom card to get solution code 
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                      primary: Colors.green,
-                                      ), // finish button
-                                      child: const Icon(Icons.check),
+                                          20), // space between problem name and check mark
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                        ElevatedButton(
+                                          // cancel button
+                                          onPressed: () {
+                                            globals.problemNameCard.value = false;
+                                            _dateFormatVal = null;
+                                            _solutionCodeCard = false;
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                          primary: Colors.red,
+                                          ), // finish button
+                                          child: const Icon(Icons.cancel),
+                                      ),
+                                      ElevatedButton(
+                                          // finish button
+                                          onPressed: () {
+                                            setState(() {
+                                              if (!_solutionCodeCard) {
+                                                _solutionCodeCard = true;
+                                              } else {
+                                                // to do: storeInfo in try catch
+                                                globals.problemNameCard.value = false;
+                                              }
+                                            });
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                          primary: !_solutionCodeCard ? Colors.green : Colors.green[800],
+                                          ), // finish button
+                                          child: !_solutionCodeCard ? const Icon(Icons.check_circle_outline_sharp) : const Icon(Icons.check),
+                                      ),
+                                    ],
                                   ),
+                                  const SizedBox(
+                                      height:
+                                          20), // space between buttons and solution code textfield
+                                  if (_solutionCodeCard) ...[ // using "...[]" to make multiple widgets appear using if condition. Source: https://stackoverflow.com/questions/49713189/how-to-use-conditional-statement-within-child-attribute-of-a-flutter-widget-cen#:~:text=1%20more%20comment-,169,if%20%2F%20else,-Column(%0A%20%20%20%20children%3A%20%5B%0A%20%20%20%20%20%20%20%20if
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Flexible(
+                                          flex: 2,
+                                          child: Focus(
+                                            onFocusChange: (hasFocus) {
+                                              if (!hasFocus) {
+                                                // to do: function that validates submission link
+                                              }
+                                            },
+                                            child: TextField(
+                                                controller: _myTextController1,
+                                                decoration: InputDecoration(
+                                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15.0)), 
+                                                    labelText: 'Solution Code',  
+                                                    hintText: '(ex: 164371249)',  
+                                                ),
+                                                textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ),
+                                        const Flexible(
+                                            flex: 1,
+                                            child: SizedBox(
+                                                width: 20,
+                                            )
+                                        ),
+                                        Flexible(
+                                          flex: 2,
+                                          child: TextField(
+                                              controller: _myTextController2,
+                                              decoration: InputDecoration(
+                                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15.0)), 
+                                                  labelText: 'Difficulty Level',  
+                                                  hintText: '(ex: 1.5)',  
+                                              ),
+                                              textAlign: TextAlign.center,
+                                              onSubmitted: (String text) {
+                                                  setState(() {
+                                                      // to do: color border to green
+                                                  });
+                                              }
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(
+                                      height:
+                                          20),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        Flexible(
+                                          flex: 3,
+                                          child: DropdownButton(
+                                              hint: const Text("Date Format "),
+                                              value: _dateFormatVal,
+                                              icon: const Icon(Icons.calendar_month),
+                                              iconSize: 18.0,
+                                              alignment: Alignment.center,
+                                              items: const [
+                                                  DropdownMenuItem(value: 1, child: Text("D/M/Y H:M")),
+                                                  DropdownMenuItem(value: 2, child: Text("M/D/Y H:M")),
+                                                  DropdownMenuItem(value: 3, child: Text("Y/M/D H:M")),
+                                              ], 
+                                              onChanged: (int? value) { 
+                                                  setState(() {
+                                                      _dateFormatVal = value;
+                                                  });
+                                               },
+                                          ),
+                                        ),
+                                        Flexible(
+                                            flex: 1,
+                                            child: Column(
+                                                children: [
+                                                    const Text("By Yourself?", style: TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold),),
+                                                    Row(
+                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                        children: [
+                                                            Column(
+                                                              children: [
+                                                                Radio(
+                                                                    value: ByYourself.YES,
+                                                                    groupValue: _byYourself,
+                                                                    activeColor: MaterialStateColor.resolveWith((states) => Colors.green),
+                                                                    onChanged: (ByYourself? val) {
+                                                                        setState(() {
+                                                                          _byYourself = val;
+                                                                        });
+                                                                    },
+                                                                ),
+                                                                const Icon(Icons.check_circle_outline_sharp, color: Colors.green),
+                                                              ],
+                                                            ),
+                                                            Column(
+                                                              children: [
+                                                                Radio(
+                                                                    value: ByYourself.NO,
+                                                                    groupValue: _byYourself,
+                                                                    activeColor: MaterialStateColor.resolveWith((states) => Colors.red),
+                                                                    onChanged: (ByYourself? val) {
+                                                                        setState(() {
+                                                                          _byYourself = val;
+                                                                        });
+                                                                    },
+                                                                ),
+                                                                const Icon(Icons.cancel_outlined, color: Colors.red),
+                                                              ],
+                                                            ),
+                                                        ],
+                                                    ),
+                                                ],
+                                            )
+                                        )
+                                      ],
+                                    ),
+                                    const SizedBox(height: 20),
+                                    TextField(
+                                        controller: _myTextController3,
+                                        decoration: InputDecoration(
+                                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),  
+                                                labelText: 'Comment',  
+                                                hintText: 'ex: hints on how you solved the problem, corner cases',  
+                                                hintStyle: const TextStyle(fontSize: 14.0),
+                                            ),
+                                            cursorColor: Colors.blue,
+                                            minLines: 1,
+                                            maxLines: 5,
+                                    )
+                                  ]
                                   ]),
                         ))),
                     );
@@ -197,6 +372,28 @@ class CardItem {
     required this.solvingStage,
     required this.timer,
   });
+}
+
+class CFProblem {
+    final String probCode;
+    final String name;
+    final List<String> timers;
+    final String solCode;
+    final String comment;
+    final String diffLevel;
+    final String byYourself;
+    final String dateFormat;
+
+    CFProblem({
+        required this.probCode,
+        required this.name,
+        required this.timers,
+        this.solCode = "",
+        this.comment = "",
+        this.diffLevel = "",
+        this.byYourself = "",
+        this.dateFormat = "DMY",
+    });
 }
 
 Widget _buildCard({required CardItem item, required _MyHomePageState app}) {
