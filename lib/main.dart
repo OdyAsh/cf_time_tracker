@@ -144,7 +144,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   style: ElevatedButton.styleFrom(
                     primary: Colors.blueGrey,
                   ), // finish button
-                  child: const Icon(Icons.restart_alt_rounded),             
+                  child: const Icon(Icons.restart_alt_rounded),                 
                   onPressed: () {
                     for (var item in items) {
                       item.timer.onExecute.add(

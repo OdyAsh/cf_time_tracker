@@ -15,10 +15,15 @@ const String _heroAddProblem = 'add-problem-code-hero';
 ///
 /// Uses a [Hero] with tag [_heroAddProblem].
 /// {@endtemplate}
-class AddProblemCodeButton extends StatelessWidget {
+class AddProblemCodeButton extends StatefulWidget {
     /// {@macro add_problem_code_button}
     const AddProblemCodeButton({Key? key}) : super(key: key);
 
+  @override
+  State<AddProblemCodeButton> createState() => _AddProblemCodeButtonState();
+}
+
+class _AddProblemCodeButtonState extends State<AddProblemCodeButton> {
     @override
     Widget build(BuildContext context) {
         return Padding(
@@ -64,13 +69,23 @@ class AddProblemCodeButton extends StatelessWidget {
 ///
 /// Uses a [Hero] with tag [_heroAddProblem].
 /// {@endtemplate}
-class _AddProblemCodePopupCard extends StatelessWidget {
+class _AddProblemCodePopupCard extends StatefulWidget {
     /// {@macro add_problem_code_popup_card}
-    _AddProblemCodePopupCard({Key? key}) : super(key: key);
-    final _myTextController1 = TextEditingController(); // for fetching problem code from top text field
-    final _myTextController2 = TextEditingController(); // for fetching problem type from bottom text field
-    final _myTextController3 = TextEditingController(); // for fetching Google sheets ID
+    const _AddProblemCodePopupCard({Key? key}) : super(key: key);
+
+  @override
+  State<_AddProblemCodePopupCard> createState() => _AddProblemCodePopupCardState();
+}
+
+class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
+    final _myTextController1 = TextEditingController(); 
+ // for fetching problem code from top text field
+    final _myTextController2 = TextEditingController(); 
+ // for fetching problem type from bottom text field
+    final _myTextController3 = TextEditingController(); 
+ // for fetching Google sheets ID
     String googleSheetsID = "";
+
     @override
     Widget build(BuildContext context) {
         return Center(
@@ -137,52 +152,65 @@ class _AddProblemCodePopupCard extends StatelessWidget {
                                           child: Row(
                                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                             children: [
-                                              ElevatedButton(
-                                                  child: (googleSheetsID == "") ? Text("Submit ID") : Text("Change ID"),
-                                                  onPressed: () {
-                                                      if (googleSheetsID == "") {
-                                                          googleSheetsID = _myTextController3.text;
-                                                          // to do: function validateID();
-                                                      } else {
-                                                          String oldID = googleSheetsID;
-                                                          googleSheetsID = "";
-                                                      }
-                                                  },
+                                              Flexible(
+                                                flex: 1,
+                                                child: ElevatedButton(
+                                                    child: (googleSheetsID == "") ? Text("Submit ID") : Text("Change ID"),
+                                                    style: ElevatedButton.styleFrom(
+                                                        primary: Colors.blueGrey,
+                                                    ),
+                                                    onPressed: () {
+                                                        if (googleSheetsID == "") {
+                                                            setState(() {
+                                                              googleSheetsID = _myTextController3.text;
+                                                              // to do: function validateID();
+                                                            });
+                                                        } else {
+                                                            setState(() {
+                                                              String oldID = googleSheetsID;
+                                                              googleSheetsID = "";
+                                                            });
+                                                        }
+                                                    },
+                                                ),
                                               ),
-                                              ElevatedButton(
-                                                  child: const Text('Track'),
-                                                  onPressed: () async {
-                                                      // logic to fetch problem name
-                                                      String code = _myTextController1.text;
-                                                      String level = _myTextController2.text;
-                                                      String newProb = await getProblemName(link: "https://codeforces.com/problemset/problem/$code/$level");
-                                                      if (newProb == "-1" || newProb == "-2") {
-                                                          return showDialog(
-                                                                  context: context, 
-                                                                  builder: (BuildContext context) => AlertDialog(
-                                                                      title: const Text('Error'),
-                                                                      content:  Text(
-                                                                          newProb == "-1" ?
-                                                                          "No internet connection"
-                                                                          : "Problem not found"
-                                                                          ),
-                                                                      actions: [
-                                                                          TextButton(
-                                                                              onPressed: () => Navigator.pop(context, 'OK'),
-                                                                              child: const Text('OK'),
-                                                                          ),
-                                                                      ],
-                                                                  )
-                                                              );
-                                                      }
-                                                      else{
-                                                          globals.problemNameCard.value = true;
-                                                          globals.problemName = newProb;
-                                                          globals.problemCode = code;
-                                                          globals.problemLevel = level;
-                                                          Navigator.pop(context); // closes card
-                                                      }
-                                                  },
+                                              Flexible(
+                                                flex: 1,
+                                                child: ElevatedButton(
+                                                    child: const Text('Track'),
+                                                    onPressed: () async {
+                                                        // logic to fetch problem name
+                                                        String code = _myTextController1.text;
+                                                        String level = _myTextController2.text;
+                                                        String newProb = await getProblemName(link: "https://codeforces.com/problemset/problem/$code/$level");
+                                                        if (newProb == "-1" || newProb == "-2") {
+                                                            return showDialog(
+                                                                    context: context, 
+                                                                    builder: (BuildContext context) => AlertDialog(
+                                                                        title: const Text('Error'),
+                                                                        content:  Text(
+                                                                            newProb == "-1" ?
+                                                                            "No internet connection"
+                                                                            : "Problem not found"
+                                                                            ),
+                                                                        actions: [
+                                                                            TextButton(
+                                                                                onPressed: () => Navigator.pop(context, 'OK'),
+                                                                                child: const Text('OK'),
+                                                                            ),
+                                                                        ],
+                                                                    )
+                                                                );
+                                                        }
+                                                        else{
+                                                            globals.problemNameCard.value = true;
+                                                            globals.problemName = newProb;
+                                                            globals.problemCode = code;
+                                                            globals.problemLevel = level;
+                                                            Navigator.pop(context); // closes card
+                                                        }
+                                                    },
+                                                ),
                                               ),
                                             ],
                                           ),
