@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:stop_watch_timer/stop_watch_timer.dart'; // code related to "stop_watch_timer" package is from here: https://www.youtube.com/watch?v=P6OW1aKV12M
+import 'package:date_format/date_format.dart';
 import 'dart:io' show Platform;
 import 'package:window_size/window_size.dart';
 import 'add_problem_code_button.dart'; // implementation from "fun with flutter": https://www.youtube.com/watch?v=Bxs8Zy2O4wk
@@ -10,9 +11,9 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   if (Platform.isWindows) {
     setWindowTitle('cf_time_tracker');
-    //double minWidth = 800, minHeight = 720;
+    double minWidth = 400, minHeight = 750;
     //setWindowMaxSize(const Size(max_width, max_height));
-    //setWindowMinSize(Size(minWidth, minHeight));
+    setWindowMinSize(Size(minWidth, minHeight));
   }
   runApp(const MyApp());
 }
@@ -38,7 +39,7 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-enum ByYourself { YES, NO}
+enum ByYourself { yes, no }
 
 class _MyHomePageState extends State<MyHomePage> {
   final isDialOpen = ValueNotifier(false); // redundant logic, as the speed dial buttons are not used anymore in this project
@@ -47,7 +48,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final _myTextController3 = TextEditingController(); // to fetch comment about the problem
   bool _solutionCodeCard = false;
   int? _dateFormatVal;
-  ByYourself? _byYourself = ByYourself.YES;
+  ByYourself _byYourself = ByYourself.yes;
   List<CardItem> items = [
     CardItem(id: 0, solvingStage: "Reading", timer: StopWatchTimer()),
     CardItem(id: 1, solvingStage: "Thinking", timer: StopWatchTimer()),
@@ -75,7 +76,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void storeInfo(CFProblem cf) {
+  void infoToSheets(CFProblem cf) {
     // to do outside this function: button to add google sheet id
     // to do: connect the sheets api here and take all object attributes to sheets
   }
@@ -139,22 +140,18 @@ class _MyHomePageState extends State<MyHomePage> {
                   },
                 ),
                 ElevatedButton(
-                  // finish button
+                  // reset button
+                  style: ElevatedButton.styleFrom(
+                    primary: Colors.blueGrey,
+                  ), // finish button
+                  child: const Icon(Icons.restart_alt_rounded),             
                   onPressed: () {
-                    for (var item in items) {
-                      item.timer.onExecute
-                          .add(StopWatchExecute.stop); // pauses all timers
-                    }
-                    // LOGIC TO COPY MINUTES AND SECONDS
                     for (var item in items) {
                       item.timer.onExecute.add(
                           StopWatchExecute.reset); // resets all timers to 0
                     }
                   },
-                  style: ElevatedButton.styleFrom(
-                    primary: Colors.blueGrey,
-                  ), // finish button
-                  child: const Icon(Icons.restart_alt_rounded)
+
                 ),
               ],
             )),
@@ -199,20 +196,62 @@ class _MyHomePageState extends State<MyHomePage> {
                                       ),
                                       ElevatedButton(
                                           // finish button
+                                          style: ElevatedButton.styleFrom(
+                                          primary: !_solutionCodeCard ? Colors.green : Colors.green[800],
+                                          ), // finish button
+                                          child: !_solutionCodeCard ? const Icon(Icons.check_circle_outline_sharp) : const Icon(Icons.check),
                                           onPressed: () {
                                             setState(() {
                                               if (!_solutionCodeCard) {
                                                 _solutionCodeCard = true;
                                               } else {
-                                                // to do: storeInfo in try catch
-                                                globals.problemNameCard.value = false;
+                                                List<String> mins = []; // storing timers' info as minutes
+                                                double secOverMin = 0;
+                                                // ignore: unused_local_variable, added this comment to avoid vs code false warning 
+                                                double minutes = 0;
+                                                for (var item in items) {
+                                                    minutes = double.parse(StopWatchTimer.getDisplayTimeMinute(item.timer.rawTime.value)); // source: https://stackoverflow.com/questions/72231057/stop-watch-timer-on-flutter-how-can-i-print-the-time-in-the-terminal-while-pres
+                                                    secOverMin = double.parse(StopWatchTimer.getDisplayTimeSecond(item.timer.rawTime.value)) / 60.0;
+                                                    minutes += secOverMin;
+                                                    mins.add(minutes.toStringAsFixed(1)); //ex: 1 minute, 32 seconds, will mean that seconds == 92, so minutes == 1.33333, which will be 1.3 
+                                                }
+
+                                                DateTime currTime = DateTime.now(); // getting current day with requested format
+                                                // ignore: unused_local_variable, added this comment to avoid vs code false warning 
+                                                String dateFormatted = "";
+                                                switch (_dateFormatVal) {
+                                                    case 1:
+                                                    dateFormatted = formatDate(currTime, [dd, '/', mm, '/', yyyy, ' ', HH, ':', nn]);
+                                                    break;
+                                                    case 2:
+                                                    dateFormatted = formatDate(currTime, [mm, '/', dd, '/', yyyy, ' ', HH, ':', nn]);
+                                                    break;
+                                                    case 3:
+                                                    dateFormatted = formatDate(currTime, [yyyy, '/', mm, '/', dd, ' ', HH, ':', nn]);
+                                                    break;
+                                                    default:
+                                                    dateFormatted = formatDate(currTime, [dd, '/', mm, '/', yyyy, ' ', HH, ':', nn]);
+                                                }
+
+                                                CFProblem cf = CFProblem( // storing all info in an object
+                                                    probCode: globals.problemCode,
+                                                    name: globals.problemName,
+                                                    timers: mins,
+                                                    solCode: _myTextController1.text,
+                                                    diffLevel: _myTextController2.text,
+                                                    comment: _myTextController3.text,
+                                                    byYourself: _byYourself.name == "yes" ? "YES" : "NO",
+                                                    dateFormatted: dateFormatted
+                                                );
+                                                try {
+                                                    infoToSheets(cf);
+                                                    //globals.problemNameCard.value = false; // to do: remove that comment when you are done
+                                                } catch(e) {
+
+                                                }
                                               }
                                             });
                                           },
-                                          style: ElevatedButton.styleFrom(
-                                          primary: !_solutionCodeCard ? Colors.green : Colors.green[800],
-                                          ), // finish button
-                                          child: !_solutionCodeCard ? const Icon(Icons.check_circle_outline_sharp) : const Icon(Icons.check),
                                       ),
                                     ],
                                   ),
@@ -304,12 +343,12 @@ class _MyHomePageState extends State<MyHomePage> {
                                                             Column(
                                                               children: [
                                                                 Radio(
-                                                                    value: ByYourself.YES,
+                                                                    value: ByYourself.yes,
                                                                     groupValue: _byYourself,
                                                                     activeColor: MaterialStateColor.resolveWith((states) => Colors.green),
                                                                     onChanged: (ByYourself? val) {
                                                                         setState(() {
-                                                                          _byYourself = val;
+                                                                          _byYourself = val!;
                                                                         });
                                                                     },
                                                                 ),
@@ -319,12 +358,12 @@ class _MyHomePageState extends State<MyHomePage> {
                                                             Column(
                                                               children: [
                                                                 Radio(
-                                                                    value: ByYourself.NO,
+                                                                    value: ByYourself.no,
                                                                     groupValue: _byYourself,
                                                                     activeColor: MaterialStateColor.resolveWith((states) => Colors.red),
                                                                     onChanged: (ByYourself? val) {
                                                                         setState(() {
-                                                                          _byYourself = val;
+                                                                          _byYourself = val!;
                                                                         });
                                                                     },
                                                                 ),
@@ -382,7 +421,7 @@ class CFProblem {
     final String comment;
     final String diffLevel;
     final String byYourself;
-    final String dateFormat;
+    final String dateFormatted;
 
     CFProblem({
         required this.probCode,
@@ -392,8 +431,13 @@ class CFProblem {
         this.comment = "",
         this.diffLevel = "",
         this.byYourself = "",
-        this.dateFormat = "DMY",
+        this.dateFormatted = "",
     });
+
+    @override
+    String toString() {
+        return "$probCode\n$name\n$timers\n$solCode\n$comment\n$diffLevel\n$byYourself\n$dateFormatted\n";
+    }
 }
 
 Widget _buildCard({required CardItem item, required _MyHomePageState app}) {

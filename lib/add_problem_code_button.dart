@@ -69,6 +69,8 @@ class _AddProblemCodePopupCard extends StatelessWidget {
     _AddProblemCodePopupCard({Key? key}) : super(key: key);
     final _myTextController1 = TextEditingController(); // for fetching problem code from top text field
     final _myTextController2 = TextEditingController(); // for fetching problem type from bottom text field
+    final _myTextController3 = TextEditingController(); // for fetching Google sheets ID
+    String googleSheetsID = "";
     @override
     Widget build(BuildContext context) {
         return Center(
@@ -94,7 +96,7 @@ class _AddProblemCodePopupCard extends StatelessWidget {
                                             decoration: const InputDecoration(
                                                 border: OutlineInputBorder(),  
                                                 labelText: 'Problem Code',  
-                                                hintText: 'Enter problem code (found in url)',  
+                                                hintText: 'found in codeforces url, ex: 713',  
                                             ),
                                         ),
                                         const Divider(
@@ -106,47 +108,84 @@ class _AddProblemCodePopupCard extends StatelessWidget {
                                             decoration: const InputDecoration(
                                                 border: OutlineInputBorder(),  
                                                 labelText: 'Problem Level',  
-                                                hintText: 'Enter Problem level (A,B,C,...)',  
+                                                hintText: 'ex: A,B,C,...',  
                                             ),
                                             cursorColor: Colors.blue,
-                                            maxLines: 2,
+                                            maxLines: 1,
                                         ),
                                         const Divider(
                                             color: Colors.white,
                                             thickness: 0.4,
                                         ),
-                                        ElevatedButton(
-                                            onPressed: () async {
-                                                // logic to fetch problem name
-                                                String code = _myTextController1.text;
-                                                String type = _myTextController2.text;
-                                                String newProb = await getProblemName(link: "https://codeforces.com/problemset/problem/$code/$type");
-                                                if (newProb == "-1" || newProb == "-2") {
-                                                    return showDialog(
-                                                            context: context, 
-                                                            builder: (BuildContext context) => AlertDialog(
-                                                                title: const Text('Error'),
-                                                                content:  Text(
-                                                                    newProb == "-1" ?
-                                                                    "No internet connection"
-                                                                    : "Problem not found"
-                                                                    ),
-                                                                actions: [
-                                                                    TextButton(
-                                                                        onPressed: () => Navigator.pop(context, 'OK'),
-                                                                        child: const Text('OK'),
-                                                                    ),
-                                                                ],
-                                                            )
-                                                        );
-                                                }
-                                                else{
-                                                    globals.problemNameCard.value = true;
-                                                    globals.problemName = newProb;
-                                                    Navigator.pop(context); // closes card
-                                                }
-                                            },
-                                            child: const Text('Track'),
+                                        if (googleSheetsID == "") ...[
+                                            TextField(
+                                                controller: _myTextController3,
+                                                decoration: const InputDecoration(
+                                                    border: OutlineInputBorder(),  
+                                                    labelText: 'Google Sheets ID',  
+                                                    hintText: 'string between d/ and /edit',  
+                                                ),
+                                                cursorColor: Colors.blue,
+                                                maxLines: 1,
+                                            ),
+                                            const Divider(
+                                                color: Colors.white,
+                                                thickness: 0.4,
+                                            ),
+                                        ],
+                                        SizedBox(
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                            children: [
+                                              ElevatedButton(
+                                                  child: (googleSheetsID == "") ? Text("Submit ID") : Text("Change ID"),
+                                                  onPressed: () {
+                                                      if (googleSheetsID == "") {
+                                                          googleSheetsID = _myTextController3.text;
+                                                          // to do: function validateID();
+                                                      } else {
+                                                          String oldID = googleSheetsID;
+                                                          googleSheetsID = "";
+                                                      }
+                                                  },
+                                              ),
+                                              ElevatedButton(
+                                                  child: const Text('Track'),
+                                                  onPressed: () async {
+                                                      // logic to fetch problem name
+                                                      String code = _myTextController1.text;
+                                                      String level = _myTextController2.text;
+                                                      String newProb = await getProblemName(link: "https://codeforces.com/problemset/problem/$code/$level");
+                                                      if (newProb == "-1" || newProb == "-2") {
+                                                          return showDialog(
+                                                                  context: context, 
+                                                                  builder: (BuildContext context) => AlertDialog(
+                                                                      title: const Text('Error'),
+                                                                      content:  Text(
+                                                                          newProb == "-1" ?
+                                                                          "No internet connection"
+                                                                          : "Problem not found"
+                                                                          ),
+                                                                      actions: [
+                                                                          TextButton(
+                                                                              onPressed: () => Navigator.pop(context, 'OK'),
+                                                                              child: const Text('OK'),
+                                                                          ),
+                                                                      ],
+                                                                  )
+                                                              );
+                                                      }
+                                                      else{
+                                                          globals.problemNameCard.value = true;
+                                                          globals.problemName = newProb;
+                                                          globals.problemCode = code;
+                                                          globals.problemLevel = level;
+                                                          Navigator.pop(context); // closes card
+                                                      }
+                                                  },
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                     ],
                                 ),
