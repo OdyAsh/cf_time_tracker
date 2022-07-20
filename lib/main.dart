@@ -2,16 +2,23 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:stop_watch_timer/stop_watch_timer.dart'; // code related to "stop_watch_timer" package is from here: https://www.youtube.com/watch?v=P6OW1aKV12M
 import 'package:date_format/date_format.dart';
+import 'package:http/http.dart' as http;
+import 'package:html/dom.dart' as dom;
 import 'dart:io' show Platform;
 import 'package:window_size/window_size.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'add_problem_code_button.dart'; // implementation from "fun with flutter": https://www.youtube.com/watch?v=Bxs8Zy2O4wk
 import 'globals.dart' as globals; // use of globals using a "globals" file: https://stackoverflow.com/questions/29182581/global-variables-in-dart
+import 'user_sheets_api.dart';
+import 'cf_problem.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
+Future main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // written for UserSheetsApi and Hive
+  await Hive.initFlutter();
+  await UserSheetsApi.initFromLocal();
   if (Platform.isWindows) {
     setWindowTitle('cf_time_tracker');
-    double minWidth = 400, minHeight = 750;
+    double minWidth = 400, minHeight = 880;
     //setWindowMaxSize(const Size(max_width, max_height));
     setWindowMinSize(Size(minWidth, minHeight));
   }
@@ -40,15 +47,18 @@ class MyHomePage extends StatefulWidget {
 }
 
 enum ByYourself { yes, no }
+enum Accepted { yes, no }
 
 class _MyHomePageState extends State<MyHomePage> {
   final isDialOpen = ValueNotifier(false); // redundant logic, as the speed dial buttons are not used anymore in this project
-  final _myTextController1 = TextEditingController(); // to fetch problem solution code
-  final _myTextController2 = TextEditingController(); // to fetch difficulty level
-  final _myTextController3 = TextEditingController(); // to fetch comment about the problem
+  final _roadMapTextController = TextEditingController(); // to fetch problem Road Map
+  final _diffLevelTextController = TextEditingController(); // to fetch difficulty level
+  final _categoryTextController = TextEditingController(); // to fetch category
+  final _commentTextController = TextEditingController(); // to fetch comment about the problem
   bool _solutionCodeCard = false;
   int? _dateFormatVal;
   ByYourself _byYourself = ByYourself.yes;
+  Accepted _accepted = Accepted.yes;
   List<CardItem> items = [
     CardItem(id: 0, solvingStage: "Reading", timer: StopWatchTimer()),
     CardItem(id: 1, solvingStage: "Thinking", timer: StopWatchTimer()),
@@ -74,11 +84,6 @@ class _MyHomePageState extends State<MyHomePage> {
             .add(StopWatchExecute.stop); // pauses other stopwatches
       }
     }
-  }
-
-  void infoToSheets(CFProblem cf) {
-    // to do outside this function: button to add google sheet id
-    // to do: connect the sheets api here and take all object attributes to sheets
   }
 
   @override
@@ -186,6 +191,16 @@ class _MyHomePageState extends State<MyHomePage> {
                                           // cancel button
                                           onPressed: () {
                                             globals.problemNameCard.value = false;
+                                            globals.problemCode = '...';
+                                            globals.problemDiv = '...';
+                                            globals.problemLevel = '...';
+                                            globals.problemName = '...';
+                                            globals.problemLink = '...';
+                                            _roadMapTextController.text = '';
+                                            _diffLevelTextController.text = '';
+                                            _categoryTextController.text = '';
+                                            _commentTextController.text = '';
+                                            _byYourself = ByYourself.yes;
                                             _dateFormatVal = null;
                                             _solutionCodeCard = false;
                                           },
@@ -200,21 +215,26 @@ class _MyHomePageState extends State<MyHomePage> {
                                           primary: !_solutionCodeCard ? Colors.green : Colors.green[800],
                                           ), // finish button
                                           child: !_solutionCodeCard ? const Icon(Icons.check_circle_outline_sharp) : const Icon(Icons.check),
-                                          onPressed: () {
-                                            setState(() {
-                                              if (!_solutionCodeCard) {
-                                                _solutionCodeCard = true;
-                                              } else {
+                                          onPressed: () async {
+                                            if (!_solutionCodeCard) {
+                                                setState(() {
+                                                    _solutionCodeCard = true;
+                                                });
+                                            } else {
                                                 List<String> mins = []; // storing timers' info as minutes
                                                 double secOverMin = 0;
                                                 // ignore: unused_local_variable, added this comment to avoid vs code false warning 
                                                 double minutes = 0;
+                                                double totalTime = 0;
                                                 for (var item in items) {
                                                     minutes = double.parse(StopWatchTimer.getDisplayTimeMinute(item.timer.rawTime.value)); // source: https://stackoverflow.com/questions/72231057/stop-watch-timer-on-flutter-how-can-i-print-the-time-in-the-terminal-while-pres
                                                     secOverMin = double.parse(StopWatchTimer.getDisplayTimeSecond(item.timer.rawTime.value)) / 60.0;
                                                     minutes += secOverMin;
-                                                    mins.add(minutes.toStringAsFixed(1)); //ex: 1 minute, 32 seconds, will mean that seconds == 92, so minutes == 1.33333, which will be 1.3 
+                                                    String minApp = minutes.toStringAsFixed(1); //ex: 1 minute, 32 seconds, will mean that seconds == 92, so minutes == 1.33333, which will be 1.3 
+                                                    mins.add(minApp); 
+                                                    totalTime += double.parse(minApp);
                                                 }
+                                                mins.add(totalTime.toStringAsFixed(1));
 
                                                 DateTime currTime = DateTime.now(); // getting current day with requested format
                                                 // ignore: unused_local_variable, added this comment to avoid vs code false warning 
@@ -233,24 +253,56 @@ class _MyHomePageState extends State<MyHomePage> {
                                                     dateFormatted = formatDate(currTime, [dd, '/', mm, '/', yyyy, ' ', HH, ':', nn]);
                                                 }
 
-                                                CFProblem cf = CFProblem( // storing all info in an object
-                                                    probCode: globals.problemCode,
-                                                    name: globals.problemName,
-                                                    timers: mins,
-                                                    solCode: _myTextController1.text,
-                                                    diffLevel: _myTextController2.text,
-                                                    comment: _myTextController3.text,
-                                                    byYourself: _byYourself.name == "yes" ? "YES" : "NO",
-                                                    dateFormatted: dateFormatted
-                                                );
-                                                try {
-                                                    infoToSheets(cf);
-                                                    //globals.problemNameCard.value = false; // to do: remove that comment when you are done
-                                                } catch(e) {
 
+                                                final response = await http.get(Uri.parse('https://codeforces.com/submissions/OdyAsh')); // getting submission link and submission count. Source: https://www.youtube.com/watch?v=9ZfRE_DN9a0
+                                                dom.Document html = dom.Document.html(response.body);
+                                                final subProbNames = html
+                                                    .querySelectorAll("table > tbody > tr > td > a") // right click problem name in the inspector, copy as selector, then trim the following (by trial and error) until you obtain required tds: '#pageContent > div.datatable > div:nth-child(6) > table > tbody > tr:nth-child(38) > td:nth-child(4) > a'
+                                                    .map((finalTag) => finalTag.innerHtml.trim())
+                                                    .toList();
+                                                int i = 0, submitCount = 0;
+                                                String submissionLink = 'https://codeforces.com/contest/${globals.problemCode}/submission/';
+                                                String submissionCode = '';
+                                                for (final prob in subProbNames) {
+                                                    if (prob.contains(globals.problemName.substring(globals.problemName.indexOf('.')+2))) {
+                                                        submitCount++;
+                                                        if (submissionLink[submissionLink.length-1] == '/') {
+                                                            submissionCode = subProbNames[i-2];
+                                                            submissionLink += submissionCode;
+                                                        }
+                                                    }
+                                                    i++;
                                                 }
-                                              }
-                                            });
+
+                                                String commentWithDate = '$dateFormatted, ${_commentTextController.text}';
+                                                
+                                                final cf = { // storing all info in a Map<String, dynamic>
+                                                    ProblemFields.roadMap: _roadMapTextController.text == '' ? 'CF Contests' : _roadMapTextController.text,
+                                                    ProblemFields.problemName: globals.problemName,
+                                                    ProblemFields.problemCode: '=HYPERLINK("${globals.problemLink}", "CF${globals.problemCode}-${globals.problemDiv}-${globals.problemLevel.toUpperCase()}")',
+                                                    ProblemFields.problemSolution: '=HYPERLINK("$submissionLink", "$submissionCode")',
+                                                    ProblemFields.status:  _accepted.name == "yes" ? "AC" : "CS",
+                                                    ProblemFields.submitCount: submitCount,
+                                                    ProblemFields.readingTime: mins[0],
+                                                    ProblemFields.thinkingTime: mins[1],
+                                                    ProblemFields.codingTime: mins[2],
+                                                    ProblemFields.debugTime: mins[3],
+                                                    ProblemFields.totalTime: mins[4],
+                                                    ProblemFields.problemLevel: _diffLevelTextController.text, // difficulty level
+                                                    ProblemFields.byYourself: _byYourself.name == "yes" ? "YES" : "NO",
+                                                    ProblemFields.category: _categoryTextController.text,
+                                                    ProblemFields.comment: commentWithDate,
+                                                };
+                                                try {
+                                                    await UserSheetsApi.insert([cf], justAppend: true);
+                                                    setState(() {
+                                                        // to do: add toaster to say that problem was added to google sheets successfully
+                                                    });
+                                                } catch(e) {
+                                                    print(e);
+                                                }
+                                            }
+                                            
                                           },
                                       ),
                                     ],
@@ -271,11 +323,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                               }
                                             },
                                             child: TextField(
-                                                controller: _myTextController1,
+                                                controller: _roadMapTextController,
                                                 decoration: InputDecoration(
                                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(15.0)), 
-                                                    labelText: 'Solution Code',  
-                                                    hintText: '(ex: 164371249)',  
+                                                    labelText: 'Road Map',  
+                                                    hintText: 'CF Contests',  
                                                 ),
                                                 textAlign: TextAlign.center,
                                             ),
@@ -290,7 +342,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         Flexible(
                                           flex: 2,
                                           child: TextField(
-                                              controller: _myTextController2,
+                                              controller: _diffLevelTextController,
                                               decoration: InputDecoration(
                                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(15.0)), 
                                                   labelText: 'Difficulty Level',  
@@ -310,8 +362,31 @@ class _MyHomePageState extends State<MyHomePage> {
                                       height:
                                           20),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
+                                        Flexible(
+                                          flex: 4,
+                                          child: TextField(
+                                              controller: _categoryTextController,
+                                              decoration: InputDecoration(
+                                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15.0)), 
+                                                  labelText: 'Category',  
+                                                  hintText: '(ex: impl, dp, greedy)',  
+                                              ),
+                                              textAlign: TextAlign.center,
+                                              onSubmitted: (String text) {
+                                                  setState(() {
+                                                      // to do: color border to green
+                                                  });
+                                              }
+                                          ),
+                                        ),
+                                        const Flexible(
+                                            flex: 1,
+                                            child: SizedBox(
+                                                width: 20,
+                                            )
+                                        ),
                                         Flexible(
                                           flex: 3,
                                           child: DropdownButton(
@@ -331,6 +406,58 @@ class _MyHomePageState extends State<MyHomePage> {
                                                   });
                                                },
                                           ),
+                                        ),
+
+                                      ],
+                                    ),
+                                    const SizedBox(
+                                      height:
+                                          20),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        Flexible(
+                                          flex: 1,
+                                            child: Column(
+                                                children: [
+                                                    const Text("Accepted?", style: TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold),),
+                                                    Row(
+                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                        children: [
+                                                            Column(
+                                                              children: [
+                                                                Radio(
+                                                                    value: Accepted.yes,
+                                                                    groupValue: _accepted,
+                                                                    activeColor: MaterialStateColor.resolveWith((states) => Colors.green),
+                                                                    onChanged: (Accepted? val) {
+                                                                        setState(() {
+                                                                          _accepted = val!;
+                                                                        });
+                                                                    },
+                                                                ),
+                                                                const Icon(Icons.check_circle_outline_sharp, color: Colors.green),
+                                                              ],
+                                                            ),
+                                                            Column(
+                                                              children: [
+                                                                Radio(
+                                                                    value: Accepted.no,
+                                                                    groupValue: _accepted,
+                                                                    activeColor: MaterialStateColor.resolveWith((states) => Colors.red),
+                                                                    onChanged: (Accepted? val) {
+                                                                        setState(() {
+                                                                          _accepted = val!;
+                                                                        });
+                                                                    },
+                                                                ),
+                                                                const Icon(Icons.cancel_outlined, color: Colors.red),
+                                                              ],
+                                                            ),
+                                                        ],
+                                                    ),
+                                                ],
+                                            )
                                         ),
                                         Flexible(
                                             flex: 1,
@@ -379,7 +506,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                     ),
                                     const SizedBox(height: 20),
                                     TextField(
-                                        controller: _myTextController3,
+                                        controller: _commentTextController,
                                         decoration: InputDecoration(
                                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),  
                                                 labelText: 'Comment',  
@@ -388,7 +515,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                             ),
                                             cursorColor: Colors.blue,
                                             minLines: 1,
-                                            maxLines: 5,
+                                            maxLines: 2,
                                     )
                                   ]
                                   ]),
@@ -413,32 +540,6 @@ class CardItem {
   });
 }
 
-class CFProblem {
-    final String probCode;
-    final String name;
-    final List<String> timers;
-    final String solCode;
-    final String comment;
-    final String diffLevel;
-    final String byYourself;
-    final String dateFormatted;
-
-    CFProblem({
-        required this.probCode,
-        required this.name,
-        required this.timers,
-        this.solCode = "",
-        this.comment = "",
-        this.diffLevel = "",
-        this.byYourself = "",
-        this.dateFormatted = "",
-    });
-
-    @override
-    String toString() {
-        return "$probCode\n$name\n$timers\n$solCode\n$comment\n$diffLevel\n$byYourself\n$dateFormatted\n";
-    }
-}
 
 Widget _buildCard({required CardItem item, required _MyHomePageState app}) {
   return SizedBox(

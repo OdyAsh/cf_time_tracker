@@ -1,8 +1,11 @@
+import 'package:cf_tracker/user_sheets_api.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:fluttertoast/fluttertoast.dart';
 
 import 'custom_rect_tween.dart';
 import 'hero_dialog_route.dart';
+import 'user_sheets_api.dart';
 import 'globals.dart' as globals;
 
 /// Tag-value used for the add problem-code popup button.
@@ -33,7 +36,7 @@ class _AddProblemCodeButtonState extends State<AddProblemCodeButton> {
                 child: GestureDetector(
                 onTap: () {
                     Navigator.of(context).push(HeroDialogRoute(builder: (context) {
-                        return _AddProblemCodePopupCard();
+                        return const _AddProblemCodePopupCard();
                     }));
                 },
                 child: Hero(
@@ -78,13 +81,11 @@ class _AddProblemCodePopupCard extends StatefulWidget {
 }
 
 class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
-    final _myTextController1 = TextEditingController(); 
- // for fetching problem code from top text field
-    final _myTextController2 = TextEditingController(); 
- // for fetching problem type from bottom text field
-    final _myTextController3 = TextEditingController(); 
- // for fetching Google sheets ID
-    String googleSheetsID = "";
+    final _codeOrCredentialsTextController = TextEditingController();  // for fetching problem code from top text field
+    final _typeOrSheetIdTextController = TextEditingController();  // for fetching problem type from bottom text field or Google sheets ID
+    final _workSheetTextController = TextEditingController();  // for fetching current worksheet's name
+    final _userNameTextController = TextEditingController(); // for fetching user's codeforces username
+    String googleSheetsID = UserSheetsApi.getSheetId;
 
     @override
     Widget build(BuildContext context) {
@@ -100,18 +101,18 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
                         color: Colors.white,
                         elevation: 2,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-                        child: SingleChildScrollView(
+                        child: SingleChildScrollView( // it isn't used for scrolling here. Rather it is used to avoid the RenderFlex overflow that occurs for milliseconds when opening up this card
                             child: Padding(
                                 padding: const EdgeInsets.all(16.0), // padding between all child elements and parent container (card)
                                 child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                         TextField( // text fields look source: https://www.javatpoint.com/flutter-textfield
-                                            controller: _myTextController1,
-                                            decoration: const InputDecoration(
-                                                border: OutlineInputBorder(),  
-                                                labelText: 'Problem Code',  
-                                                hintText: 'found in codeforces url, ex: 713',  
+                                            controller: _codeOrCredentialsTextController,
+                                            decoration: InputDecoration(
+                                                border: const OutlineInputBorder(),  
+                                                labelText: (googleSheetsID == "") ? 'Credentials' : 'Problem Code',  
+                                                hintText: (googleSheetsID == "") ? 'JSON of service account' : 'found in codeforces url, ex: 713',  
                                             ),
                                         ),
                                         const Divider(
@@ -119,11 +120,11 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
                                             thickness: 0.4,
                                         ),
                                         TextField(
-                                            controller: _myTextController2,
-                                            decoration: const InputDecoration(
-                                                border: OutlineInputBorder(),  
-                                                labelText: 'Problem Level',  
-                                                hintText: 'ex: A,B,C,...',  
+                                            controller: _typeOrSheetIdTextController,
+                                            decoration: InputDecoration(
+                                                border: const OutlineInputBorder(),  
+                                                labelText: (googleSheetsID == "") ? 'Google Sheets ID' : 'Problem Level',  
+                                                hintText: (googleSheetsID == "") ? 'string between d/ and /edit' : 'ex: A,B,C,...',  
                                             ),
                                             cursorColor: Colors.blue,
                                             maxLines: 1,
@@ -134,11 +135,25 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
                                         ),
                                         if (googleSheetsID == "") ...[
                                             TextField(
-                                                controller: _myTextController3,
+                                                controller: _workSheetTextController,
                                                 decoration: const InputDecoration(
                                                     border: OutlineInputBorder(),  
-                                                    labelText: 'Google Sheets ID',  
-                                                    hintText: 'string between d/ and /edit',  
+                                                    labelText: 'Worksheet',  
+                                                    hintText: 'Name of tab at the bottom',  
+                                                ),
+                                                cursorColor: Colors.blue,
+                                                maxLines: 1,
+                                            ),
+                                            const Divider(
+                                                color: Colors.white,
+                                                thickness: 0.4,
+                                            ),
+                                            TextField(
+                                                controller: _userNameTextController,
+                                                decoration: const InputDecoration(
+                                                    border: OutlineInputBorder(),  
+                                                    labelText: 'CF Username',  
+                                                    hintText: 'ex: OdyAsh',  
                                                 ),
                                                 cursorColor: Colors.blue,
                                                 maxLines: 1,
@@ -155,48 +170,57 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
                                               Flexible(
                                                 flex: 1,
                                                 child: ElevatedButton(
-                                                    child: (googleSheetsID == "") ? Text("Submit ID") : Text("Change ID"),
+                                                    child: (googleSheetsID == "") ? const Text("Submit Info") : const Text("Change Info"),
                                                     style: ElevatedButton.styleFrom(
                                                         primary: Colors.blueGrey,
                                                     ),
                                                     onPressed: () {
                                                         if (googleSheetsID == "") {
                                                             setState(() {
-                                                              googleSheetsID = _myTextController3.text;
-                                                              // to do: function validateID();
+                                                              googleSheetsID = _typeOrSheetIdTextController.text;
                                                             });
+                                                            String creds = _codeOrCredentialsTextController.text;
+                                                            String wsName = _workSheetTextController.text;
+                                                            String cfName = _userNameTextController.text;
+                                                            UserSheetsApi.initFromUI(creds, googleSheetsID, wsName, cfName);
+                                                            _codeOrCredentialsTextController.text = '';
+                                                            _typeOrSheetIdTextController.text = '';
                                                         } else {
                                                             setState(() {
-                                                              String oldID = googleSheetsID;
                                                               googleSheetsID = "";
                                                             });
                                                         }
                                                     },
                                                 ),
                                               ),
-                                              Flexible(
+                                              if (googleSheetsID != '') Flexible(
                                                 flex: 1,
                                                 child: ElevatedButton(
                                                     child: const Text('Track'),
                                                     onPressed: () async {
                                                         // logic to fetch problem name
-                                                        String code = _myTextController1.text;
-                                                        String level = _myTextController2.text;
-                                                        String newProb = await getProblemName(link: "https://codeforces.com/problemset/problem/$code/$level");
-                                                        if (newProb == "-1" || newProb == "-2") {
+                                                        String code = _codeOrCredentialsTextController.text;
+                                                        String level = _typeOrSheetIdTextController.text;
+                                                        globals.problemLink = "https://codeforces.com/problemset/problem/$code/$level";
+                                                        List<String> newProb = await getProblemName(link: globals.problemLink);
+                                                        if (newProb[0] == "-1" || newProb[0] == "-2") {
                                                             return showDialog(
                                                                     context: context, 
                                                                     builder: (BuildContext context) => AlertDialog(
                                                                         title: const Text('Error'),
                                                                         content:  Text(
-                                                                            newProb == "-1" ?
+                                                                            newProb[0] == "-1" ?
                                                                             "No internet connection"
-                                                                            : "Problem not found"
+                                                                            : "Problem not found or you're in a live contest"
                                                                             ),
                                                                         actions: [
                                                                             TextButton(
-                                                                                onPressed: () => Navigator.pop(context, 'OK'),
-                                                                                child: const Text('OK'),
+                                                                                onPressed: () { 
+                                                                                    Navigator.pop(context, 'OK');
+                                                                                    Navigator.pop(context);
+                                                                                    globals.problemNameCard.value = true;
+                                                                                },
+                                                                                child: const Text('set problem name as "..."'),
                                                                             ),
                                                                         ],
                                                                     )
@@ -204,7 +228,8 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
                                                         }
                                                         else{
                                                             globals.problemNameCard.value = true;
-                                                            globals.problemName = newProb;
+                                                            globals.problemName = newProb[0];
+                                                            globals.problemDiv = newProb[1];
                                                             globals.problemCode = code;
                                                             globals.problemLevel = level;
                                                             Navigator.pop(context); // closes card
@@ -226,15 +251,33 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
     }
 }
 
-Future<String> getProblemName({required String link}) async{
+Future<List<String>> getProblemName({required String link}) async{
     var response = await http.get(Uri.parse(link));
     if(response.statusCode != 200){
-        return "-1";
+        return ["-1","-1"];
     }
     String htmlToParse = response.body;
-    RegExp regex = RegExp(r'<div class="title">([^<]*)</div>');
-    if (!regex.hasMatch(htmlToParse)){
-        return "-2";
+    RegExp regex1 = RegExp(r'<div class="title">([^<]*)</div>'); // source: https://stackoverflow.com/questions/3467369/regex-to-grab-an-entire-div-with-a-specific-id
+    if (!regex1.hasMatch(htmlToParse)){
+        return ["-2","-2"];
     }
-    return regex.firstMatch(htmlToParse)!.groups([1])[0]!;
+    //RegExp regex2 = RegExp(r'(Codeforces.+?(?=\)</a>))');
+    RegExp regex2 = RegExp(r'(<a style=.+?(?=href="/contest/).+</a>)'); // logic: search for <a style=, then keep matching until you find href="/contest/, when this is found, match it and keep matching (using .+) until </a>, source: https://stackoverflow.com/questions/7124778/how-can-i-match-anything-up-until-this-sequence-of-characters-in-a-regular-exp
+    if (!regex2.hasMatch(htmlToParse)){
+        return ["-3","-3"];
+    }
+    String probName = regex1.firstMatch(htmlToParse)!.groups([1])[0]!;
+    String division = regex2.firstMatch(htmlToParse)!.groups([1])[0]!;
+    print(division);
+    int divLoc1 = division.indexOf('Div. ');
+    int divLoc2 = division.indexOf('Round ');
+    if (divLoc1 != -1) {
+        division = "D${division[divLoc1+'div. '.length]}";
+    } else if (divLoc2 != -1) {
+        division = "G${division.substring(divLoc2+'Round '.length, division.indexOf('</a>'))}"; // arguments of substring in dart: [startingIndex, endingIndex)
+    } else {
+        division = division.substring(division.indexOf('>'), division.indexOf('</a>'));
+    }
+    print(division);
+    return [probName, division];
 }

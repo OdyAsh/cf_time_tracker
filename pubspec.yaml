@@ -45,6 +45,10 @@ dependencies:
       path: plugins/window_size
   http: ^0.13.4
   date_format: ^2.0.6
+  gsheets: ^0.4.2
+  html: ^0.15.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
 
 dev_dependencies:
   flutter_test:
