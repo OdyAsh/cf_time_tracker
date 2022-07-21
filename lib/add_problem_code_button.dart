@@ -1,7 +1,7 @@
 import 'package:cf_tracker/user_sheets_api.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:fluttertoast/fluttertoast.dart';
+import 'motion_toast.dart' as toast_file;
 
 import 'custom_rect_tween.dart';
 import 'hero_dialog_route.dart';
@@ -86,6 +86,8 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
     final _workSheetTextController = TextEditingController();  // for fetching current worksheet's name
     final _userNameTextController = TextEditingController(); // for fetching user's codeforces username
     String googleSheetsID = UserSheetsApi.getSheetId;
+
+
 
     @override
     Widget build(BuildContext context) {
@@ -183,6 +185,7 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
                                                             String wsName = _workSheetTextController.text;
                                                             String cfName = _userNameTextController.text;
                                                             UserSheetsApi.initFromUI(creds, googleSheetsID, wsName, cfName);
+                                                            toast_file.displayResponsiveMotionToast(context, "Welcome $cfName!!!", 'You will remain signed in until you press "change info"');
                                                             _codeOrCredentialsTextController.text = '';
                                                             _typeOrSheetIdTextController.text = '';
                                                         } else {
