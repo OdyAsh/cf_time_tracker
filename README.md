@@ -35,7 +35,7 @@
 
 ![screenshot](https://github.com/OdyAsh/cf_time_tracker/blob/main/appScreenshots/0%20installing.gif)
 
-3. Copy [this training sheet](https://docs.google.com/spreadsheets/d/1waZ8nH1GRXRbM2gXym5W1AGQ0bB73PWXhOi7-ijxCnc/edit?usp=sharing) to your own Google drive:
+3. Copy [this training sheet](https://docs.google.com/spreadsheets/d/1waZ8nH1GRXRbM2gXym5W1AGQ0bB73PWXhOi7-ijxCnc/edit?usp=sharing) to your own Google drive (AND DON'T MODIFY THE HEADER ROW (row 1)):
 
 ![screenshot](https://github.com/OdyAsh/cf_time_tracker/blob/main/appScreenshots/1%20copying-training-sheet.gif)
 
