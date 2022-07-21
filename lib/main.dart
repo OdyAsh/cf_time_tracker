@@ -11,6 +11,7 @@ import 'add_problem_code_button.dart'; // implementation from "fun with flutter"
 import 'globals.dart' as globals; // use of globals using a "globals" file: https://stackoverflow.com/questions/29182581/global-variables-in-dart
 import 'user_sheets_api.dart';
 import 'cf_problem.dart';
+import 'motion_toast.dart' as toast_file;
 
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized(); // written for UserSheetsApi and Hive
@@ -101,7 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
             title: Text(widget.title),
           ),
           floatingActionButton: const AddProblemCodeButton(),
-          body: Column(children: [
+          body: Column( children: [ // to do: make the timer cards centered not left aligned
             const SizedBox(height: 50), // gives space between app bar and cards
             Padding(
               padding: const EdgeInsets.only(left: 20.0),
@@ -163,7 +164,7 @@ class _MyHomePageState extends State<MyHomePage> {
             const SizedBox(height: 30),
             ValueListenableBuilder( // Class that enables changes on returned widget to appear in the UI if a valueListenable changes, source: https://stackoverflow.com/questions/62007967/updating-a-widget-when-a-global-variable-changes-async-in-flutter
                 valueListenable: globals.problemNameCard, // note: search term used to know this info: "refresh when a variable changes flutter"
-                builder: (context, value, widget) {
+                builder: (context, value, widget) { // to do: logic that animates card getting bigger/smaller
                     return Visibility(
                         visible: globals.problemNameCard.value,
                         child: SizedBox( // the if() makes the problem name card not visible unless "track" button is pressed
@@ -216,7 +217,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                           ), // finish button
                                           child: !_solutionCodeCard ? const Icon(Icons.check_circle_outline_sharp) : const Icon(Icons.check),
                                           onPressed: () async {
-                                            if (!_solutionCodeCard) {
+                                            if (!_solutionCodeCard) { 
                                                 setState(() {
                                                     _solutionCodeCard = true;
                                                 });
@@ -296,7 +297,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                                 try {
                                                     await UserSheetsApi.insert([cf], justAppend: true);
                                                     setState(() {
-                                                        // to do: add toaster to say that problem was added to google sheets successfully
+                                                        toast_file.displayResponsiveMotionToast(context, "Problem Solved!!!", "This problem's details have been added to sheets");
                                                     });
                                                 } catch(e) {
                                                     print(e);
