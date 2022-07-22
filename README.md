@@ -41,7 +41,7 @@
 
 
 > **Optional:**
-> I suggest you check out the "Info" worksheet of the training sheet or watch this video to understand how to use the sheet for worksheets other than "External"
+> I suggest you check out the "Info" worksheet of the training sheet or watch [this video by Dr. Mostafa](https://www.youtube.com/watch?v=c3lmvYBxgwE) to understand how to use the sheet for worksheets other than "External"
 
 4. Copy the new sheet's ID:
 
@@ -76,7 +76,7 @@
 
 10. Keep tracking different problems and repeating steps 7 to 9 :]
 
-**Implementation Note:**
+**Implementation note about using web scraping on first submission page only:**
 ![screenshot](https://github.com/OdyAsh/cf_time_tracker/blob/main/appScreenshots/10%20note-about-saving-from-submissions.png)
 
 ## Download
