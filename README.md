@@ -96,7 +96,7 @@ Then you will find the executable file here: ```build/LINUX (or MACOS)/runner/re
 ## Credits
 
 Amazing resources that helped me:
-
+- [Dr. Mostafa Saad with his training sheet](https://www.youtube.com/c/ArabicCompetitiveProgramming)
 - [Johannes Milke](https://www.youtube.com/c/JohannesMilke)
 - [How to create Flutter .exe for Windows by Paras Jain](https://retroportalstudio.medium.com/creating-exe-executable-file-for-flutter-desktop-apps-windows-ea7c338465e)
 
