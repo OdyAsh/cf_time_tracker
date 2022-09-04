@@ -7,7 +7,7 @@ import 'package:html/dom.dart' as dom;
 import 'dart:io' show Platform;
 import 'package:window_size/window_size.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'add_problem_code_button.dart'; // implementation from "fun with flutter": https://www.youtube.com/watch?v=Bxs8Zy2O4wk
+import 'add_problem.dart'; // implementation from "fun with flutter": https://www.youtube.com/watch?v=Bxs8Zy2O4wk
 import 'globals.dart' as globals; // use of globals using a "globals" file: https://stackoverflow.com/questions/29182581/global-variables-in-dart
 import 'user_sheets_api.dart';
 import 'cf_problem.dart';
@@ -254,7 +254,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                                     dateFormatted = formatDate(currTime, [dd, '/', mm, '/', yyyy, ' ', HH, ':', nn]);
                                                 }
 
-
+                                                // to-do: add logic to get submission link for CSES (Note: It's not easy :])
                                                 final response = await http.get(Uri.parse('https://codeforces.com/submissions/OdyAsh')); // getting submission link and submission count. Source: https://www.youtube.com/watch?v=9ZfRE_DN9a0
                                                 dom.Document html = dom.Document.html(response.body);
                                                 final subProbNames = html
@@ -276,11 +276,18 @@ class _MyHomePageState extends State<MyHomePage> {
                                                 }
 
                                                 String commentWithDate = '$dateFormatted, ${_commentTextController.text}';
+
+                                                String? probCode;
+                                                if (globals.platform == "CSES") {
+                                                    probCode = '=HYPERLINK("${globals.problemLink}", "CSES-${globals.problemDiv}-${globals.problemCode}")';
+                                                } else {
+                                                    probCode = '=HYPERLINK("${globals.problemLink}", "CF${globals.problemCode}-${globals.problemDiv}-${globals.problemLevel!.toUpperCase()}")';
+                                                }
                                                 
                                                 final cf = { // storing all info in a Map<String, dynamic>
                                                     ProblemFields.roadMap: _roadMapTextController.text == '' ? 'CF Contests' : _roadMapTextController.text,
                                                     ProblemFields.problemName: globals.problemName,
-                                                    ProblemFields.problemCode: '=HYPERLINK("${globals.problemLink}", "CF${globals.problemCode}-${globals.problemDiv}-${globals.problemLevel.toUpperCase()}")',
+                                                    ProblemFields.problemCode: probCode,
                                                     ProblemFields.problemSolution: '=HYPERLINK("$submissionLink", "$submissionCode")',
                                                     ProblemFields.status:  _accepted.name == "yes" ? "AC" : "CS",
                                                     ProblemFields.submitCount: submitCount,
@@ -328,7 +335,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                                 decoration: InputDecoration(
                                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(15.0)), 
                                                     labelText: 'Road Map',  
-                                                    hintText: 'CF Contests',  
+                                                    hintText: '(ex: CF Contests)',  
                                                 ),
                                                 textAlign: TextAlign.center,
                                             ),

@@ -1,3 +1,5 @@
+// ignore_for_file: sort_child_properties_last
+
 import 'package:cf_tracker/user_sheets_api.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -80,13 +82,14 @@ class _AddProblemCodePopupCard extends StatefulWidget {
   State<_AddProblemCodePopupCard> createState() => _AddProblemCodePopupCardState();
 }
 
+String? _platform; // the online platform chosen (codeforces, cses, etc) (Note: if _platform is null, then it is treated as "CF") (Note 2: String is outside the class to retain its value when card opens again)
+
 class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
     final _codeOrCredentialsTextController = TextEditingController();  // for fetching problem code from top text field
     final _typeOrSheetIdTextController = TextEditingController();  // for fetching problem type from bottom text field or Google sheets ID
     final _workSheetTextController = TextEditingController();  // for fetching current worksheet's name
     final _userNameTextController = TextEditingController(); // for fetching user's codeforces username
     String googleSheetsID = UserSheetsApi.getSheetId;
-
 
 
     @override
@@ -121,15 +124,36 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
                                             color: Colors.white,
                                             thickness: 0.4,
                                         ),
-                                        TextField(
-                                            controller: _typeOrSheetIdTextController,
-                                            decoration: InputDecoration(
-                                                border: const OutlineInputBorder(),  
-                                                labelText: (googleSheetsID == "") ? 'Google Sheets ID' : 'Problem Level',  
-                                                hintText: (googleSheetsID == "") ? 'string between d/ and /edit' : 'ex: A,B,C,...',  
-                                            ),
+                                        if (_platform is! String || _platform == "CF") ...[
+                                            TextField(
+                                                controller: _typeOrSheetIdTextController,
+                                                decoration: InputDecoration(
+                                                    border: const OutlineInputBorder(),  
+                                                    labelText: (googleSheetsID == "") ? 'Google Sheets ID' : 'Problem Level',  
+                                                    hintText: (googleSheetsID == "") ? 'string between d/ and /edit' : 'ex: A,B,C,...',  
+                                                ),
                                             cursorColor: Colors.blue,
                                             maxLines: 1,
+                                            ),
+                                            const Divider(
+                                                color: Colors.white,
+                                                thickness: 0.4,
+                                            ),
+                                        ],
+                                        DropdownButton( // to-do: fix "A RenderFlex overflowed by 49 pixels on the right."
+                                            hint: const Text("Default: CF"),
+                                            value: _platform,
+                                            items: const [
+                                                DropdownMenuItem(value: "CF", child: Text("CF")),
+                                                DropdownMenuItem(value: "CSES", child: Text("CSES")),
+                                            ], 
+                                            onChanged: (String? selectedPlatform) { 
+                                                if (selectedPlatform is String) {
+                                                    setState(() {
+                                                      _platform = selectedPlatform;
+                                                    });
+                                                }
+                                             },
                                         ),
                                         const Divider(
                                             color: Colors.white,
@@ -202,10 +226,18 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
                                                     child: const Text('Track'),
                                                     onPressed: () async {
                                                         // logic to fetch problem name
-                                                        String code = _codeOrCredentialsTextController.text;
-                                                        String level = _typeOrSheetIdTextController.text;
-                                                        globals.problemLink = "https://codeforces.com/problemset/problem/$code/$level";
-                                                        List<String> newProb = await getProblemName(link: globals.problemLink);
+                                                        String? code;
+                                                        String? level; // to-do: make them retain their values when operning card again (putting these variables outside the class doesn't work)
+                                                        if (_platform is! String || _platform == "CF") {
+                                                            code = _codeOrCredentialsTextController.text;
+                                                            level = _typeOrSheetIdTextController.text;
+                                                            globals.problemLink = "https://codeforces.com/problemset/problem/$code/$level";
+                                                        }
+                                                        else if (_platform == "CSES") {
+                                                            code = _codeOrCredentialsTextController.text;
+                                                            globals.problemLink = "https://cses.fi/problemset/task/$code";
+                                                        }
+                                                        List<String> newProb = await getProblemName(link: globals.problemLink, platform: _platform);
                                                         if (newProb[0] == "-1" || newProb[0] == "-2") {
                                                             return showDialog(
                                                                     context: context, 
@@ -232,10 +264,11 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
                                                         else{
                                                             globals.problemNameCard.value = true;
                                                             globals.problemName = newProb[0];
-                                                            globals.problemDiv = newProb[1];
-                                                            globals.problemCode = code;
+                                                            globals.problemDiv = newProb[1]; // if platform == CSES, problemDiv is actually the problem category (dp, etc)
+                                                            globals.problemCode = code!;
                                                             globals.problemLevel = level;
-                                                            Navigator.pop(context); // closes card
+                                                            globals.platform = _platform;
+                                                            Navigator.pop(context); // closes card. to-do: fix warning: "Do not use BuildContexts across async gaps."
                                                         }
                                                     },
                                                 ),
@@ -254,33 +287,74 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
     }
 }
 
-Future<List<String>> getProblemName({required String link}) async{
+Future<List<String>> getProblemName({required String link, required String? platform}) async{
     var response = await http.get(Uri.parse(link));
     if(response.statusCode != 200){
         return ["-1","-1"];
     }
     String htmlToParse = response.body;
-    RegExp regex1 = RegExp(r'<div class="title">([^<]*)</div>'); // source: https://stackoverflow.com/questions/3467369/regex-to-grab-an-entire-div-with-a-specific-id
-    if (!regex1.hasMatch(htmlToParse)){
-        return ["-2","-2"];
+    RegExp? regex1;
+    RegExp? regex2;
+    if (platform is! String || platform == "CF") {
+            regex1 = RegExp(r'<div class="title">([^<]*)</div>'); // source: https://stackoverflow.com/questions/3467369/regex-to-grab-an-entire-div-with-a-specific-id
+        if (!regex1.hasMatch(htmlToParse)){
+            return ["-2","-2"];
+        }
+        //regex2 = RegExp(r'(Codeforces.+?(?=\)</a>))');
+        regex2 = RegExp(r'(<a style=.+?(?=href="/contest/).+</a>)'); // logic: search for <a style=, then keep matching until you find href="/contest/, when this is found, match it and keep matching (using .+) until </a>, source: https://stackoverflow.com/questions/7124778/how-can-i-match-anything-up-until-this-sequence-of-characters-in-a-regular-exp
+        if (!regex2.hasMatch(htmlToParse)){
+            return ["-3","-3"];
+        }
+        String probName = regex1.firstMatch(htmlToParse)!.groups([1])[0]!;
+        String division = regex2.firstMatch(htmlToParse)!.groups([1])[0]!;
+        int divLoc1 = division.indexOf('Div. ');
+        int divLoc2 = division.indexOf('Round ');
+        if (divLoc1 != -1) {
+            division = "D${division[divLoc1+'div. '.length]}";
+        } else if (divLoc2 != -1) {
+            division = "G${division.substring(divLoc2+'Round '.length, division.indexOf('</a>'))}"; // arguments of substring in dart: [startingIndex, endingIndex)
+        } else {
+            division = division.substring(division.indexOf('>'), division.indexOf('</a>'));
+        }
+        return [probName, division];
     }
-    //RegExp regex2 = RegExp(r'(Codeforces.+?(?=\)</a>))');
-    RegExp regex2 = RegExp(r'(<a style=.+?(?=href="/contest/).+</a>)'); // logic: search for <a style=, then keep matching until you find href="/contest/, when this is found, match it and keep matching (using .+) until </a>, source: https://stackoverflow.com/questions/7124778/how-can-i-match-anything-up-until-this-sequence-of-characters-in-a-regular-exp
-    if (!regex2.hasMatch(htmlToParse)){
-        return ["-3","-3"];
+    if (platform == "CSES") {
+        regex1 = RegExp(r'<h1>([^<]*)</h1>');
+        if (!regex1.hasMatch(htmlToParse)){
+            return ["-2","-2"];
+        }
+        regex2 = RegExp(r'<h4>([^<]*)</h4>');
+        if (!regex2.hasMatch(htmlToParse)){
+            return ["-3","-3"];
+        }
+        String probNameCSES = regex1.firstMatch(htmlToParse)!.groups([1])[0]!;
+        String category = regex2.firstMatch(htmlToParse)!.groups([1])[0]!;
+        if (category.contains("Intro")) {
+          category = "INT";
+        } else if (category.contains("Sort")) {
+            category = "SRT";
+        } else if (category.contains("Dyn")) {
+            category = "DP";
+        } else if (category.contains("Gra")) {
+            category = "GPH";
+        } else if (category.contains("Ran")) {
+            category = "RNG";
+        } else if (category.contains("Tree")) {
+            category = "TRE";
+        } else if (category.contains("Math")) {
+            category = "MTH";
+        } else if (category.contains("Str")) {
+            category = "STR";
+        } else if (category.contains("Geo")) {
+            category = "GEO";
+        } else if (category.contains("Adv")) {
+            category = "ADV";
+        } else if (category.contains("Add")) {
+            category = "ADD";
+        }
+        return [probNameCSES, category];
     }
-    String probName = regex1.firstMatch(htmlToParse)!.groups([1])[0]!;
-    String division = regex2.firstMatch(htmlToParse)!.groups([1])[0]!;
-    print(division);
-    int divLoc1 = division.indexOf('Div. ');
-    int divLoc2 = division.indexOf('Round ');
-    if (divLoc1 != -1) {
-        division = "D${division[divLoc1+'div. '.length]}";
-    } else if (divLoc2 != -1) {
-        division = "G${division.substring(divLoc2+'Round '.length, division.indexOf('</a>'))}"; // arguments of substring in dart: [startingIndex, endingIndex)
-    } else {
-        division = division.substring(division.indexOf('>'), division.indexOf('</a>'));
+    else {
+        return ['-5', '-5'];
     }
-    print(division);
-    return [probName, division];
 }
