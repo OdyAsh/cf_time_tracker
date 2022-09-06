@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:stop_watch_timer/stop_watch_timer.dart'; // code related to "stop_watch_timer" package is from here: https://www.youtube.com/watch?v=P6OW1aKV12M
 import 'package:date_format/date_format.dart';
@@ -9,7 +8,6 @@ import 'dart:ui';
 import 'package:window_size/window_size.dart';
 import 'package:desktop_window/desktop_window.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:responsive_framework/responsive_framework.dart';
 import 'add_problem.dart'; // implementation from "fun with flutter": https://www.youtube.com/watch?v=Bxs8Zy2O4wk
 import 'globals.dart' as globals; // use of globals using a "globals" file: https://stackoverflow.com/questions/29182581/global-variables-in-dart
 import 'user_sheets_api.dart';
@@ -40,19 +38,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Builder(
-        builder: (context) => ResponsiveWrapper.builder(
-        const MyHomePage(title: 'Problem Details'),
-        minWidth: 560,
-        defaultScale: false,
-          breakpoints: [
-            //const ResponsiveBreakpoint.resize(650, name: MOBILE),
-            //const ResponsiveBreakpoint.autoScale(880, name: TABLET), // was called tablet
-            //const ResponsiveBreakpoint.resize(1100, name: DESKTOP),
-          ],
-          background: Container(color: const Color(0xFFF5F5F5)),
-        ),
-      ),
+      home: const MyHomePage(title: 'Problem Details'),
       title: 'cf_time_tracker',
       theme: ThemeData(
         primarySwatch: Colors.blue,
