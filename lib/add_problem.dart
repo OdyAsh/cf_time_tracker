@@ -140,25 +140,28 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
                                                 thickness: 0.4,
                                             ),
                                         ],
-                                        DropdownButton( // to-do: fix "A RenderFlex overflowed by 49 pixels on the right."
-                                            hint: const Text("Default: CF"),
-                                            value: _platform,
-                                            items: const [
-                                                DropdownMenuItem(value: "CF", child: Text("CF")),
-                                                DropdownMenuItem(value: "CSES", child: Text("CSES")),
-                                            ], 
-                                            onChanged: (String? selectedPlatform) { 
-                                                if (selectedPlatform is String) {
-                                                    setState(() {
-                                                      _platform = selectedPlatform;
-                                                    });
-                                                }
-                                             },
-                                        ),
+                                        if (googleSheetsID != '') ... [
+                                            DropdownButton( // to-do: fix "A RenderFlex overflowed by 49 pixels on the right."
+                                                hint: const Text("Default: CF"),
+                                                value: _platform,
+                                                items: const [
+                                                    DropdownMenuItem(value: "CF", child: Text("CF")),
+                                                    DropdownMenuItem(value: "CSES", child: Text("CSES")),
+                                                ], 
+                                                onChanged: (String? selectedPlatform) { 
+                                                    if (selectedPlatform is String) {
+                                                        setState(() {
+                                                        _platform = selectedPlatform;
+                                                        });
+                                                    }
+                                                },
+                                            ),
                                         const Divider(
                                             color: Colors.white,
                                             thickness: 0.4,
                                         ),
+                                        ] ,
+                                        
                                         if (googleSheetsID == "") ...[
                                             TextField(
                                                 controller: _workSheetTextController,

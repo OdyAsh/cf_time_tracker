@@ -78,6 +78,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.6"
+  desktop_window:
+    dependency: "direct main"
+    description:
+      name: desktop_window
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.4.0"
   fake_async:
     dependency: transitive
     description:
@@ -298,6 +305,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "4.2.4"
+  responsive_framework:
+    dependency: "direct main"
+    description:
+      name: responsive_framework
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.2.0"
   rxdart:
     dependency: transitive
     description:

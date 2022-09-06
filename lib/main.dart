@@ -5,8 +5,11 @@ import 'package:date_format/date_format.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/dom.dart' as dom;
 import 'dart:io' show Platform;
+import 'dart:ui';
 import 'package:window_size/window_size.dart';
+import 'package:desktop_window/desktop_window.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:responsive_framework/responsive_framework.dart';
 import 'add_problem.dart'; // implementation from "fun with flutter": https://www.youtube.com/watch?v=Bxs8Zy2O4wk
 import 'globals.dart' as globals; // use of globals using a "globals" file: https://stackoverflow.com/questions/29182581/global-variables-in-dart
 import 'user_sheets_api.dart';
@@ -19,9 +22,15 @@ Future main() async {
   await UserSheetsApi.initFromLocal();
   if (Platform.isWindows) {
     setWindowTitle('cf_time_tracker');
-    double minWidth = 400, minHeight = 880;
+    double minWidth = 400, minHeight = 640;
     //setWindowMaxSize(const Size(max_width, max_height));
     setWindowMinSize(Size(minWidth, minHeight));
+    Size screenDimensions = await DesktopWindow.getWindowSize(); // actually gets app dimensions which is initially set to montior dimensions in "main.cpp" file (Win32Window::Size size(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));)
+    double screenWidth = screenDimensions.width;
+    double screenHeight = screenDimensions.height;
+    double appWidth = screenWidth/2.15;
+    double appHeight = screenHeight/1.2;
+    setWindowFrame(Rect.fromLTWH(screenWidth/3, screenHeight/10, appWidth, appHeight));
   }
   runApp(const MyApp());
 }
@@ -31,11 +40,23 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      home: Builder(
+        builder: (context) => ResponsiveWrapper.builder(
+        const MyHomePage(title: 'Problem Details'),
+        minWidth: 560,
+        defaultScale: false,
+          breakpoints: [
+            //const ResponsiveBreakpoint.resize(650, name: MOBILE),
+            //const ResponsiveBreakpoint.autoScale(880, name: TABLET), // was called tablet
+            //const ResponsiveBreakpoint.resize(1100, name: DESKTOP),
+          ],
+          background: Container(color: const Color(0xFFF5F5F5)),
+        ),
+      ),
       title: 'cf_time_tracker',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Problem Details'),
     );
   }
 }
