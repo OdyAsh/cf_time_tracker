@@ -18,6 +18,7 @@ Future main() async {
   WidgetsFlutterBinding.ensureInitialized(); // written for UserSheetsApi and Hive
   await Hive.initFlutter();
   await UserSheetsApi.initFromLocal();
+  globals.worksheetNames = UserSheetsApi.getWorksheetNames;
   if (Platform.isWindows) {
     setWindowTitle('cf_time_tracker');
     double minWidth = 400, minHeight = 640;
@@ -74,6 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
     CardItem(id: 2, solvingStage: "Coding", timer: StopWatchTimer()),
     CardItem(id: 3, solvingStage: "Debugging", timer: StopWatchTimer()),
   ];
+  String chosenWorksheet = "CF-A";
 
   @override
   void dispose() {
@@ -291,26 +293,51 @@ class _MyHomePageState extends State<MyHomePage> {
                                                 } else {
                                                     probCode = '=HYPERLINK("${globals.problemLink}", "CF${globals.problemCode}-${globals.problemDiv}-${globals.problemLevel!.toUpperCase()}")';
                                                 }
-                                                
-                                                final cf = { // storing all info in a Map<String, dynamic>
-                                                    ProblemFields.roadMap: _roadMapTextController.text == '' ? 'CF Contests' : _roadMapTextController.text,
-                                                    ProblemFields.problemName: globals.problemName,
-                                                    ProblemFields.problemCode: probCode,
-                                                    ProblemFields.problemSolution: '=HYPERLINK("$submissionLink", "$submissionCode")',
-                                                    ProblemFields.status:  _accepted.name == "yes" ? "AC" : "CS",
-                                                    ProblemFields.submitCount: submitCount,
-                                                    ProblemFields.readingTime: mins[0],
-                                                    ProblemFields.thinkingTime: mins[1],
-                                                    ProblemFields.codingTime: mins[2],
-                                                    ProblemFields.debugTime: mins[3],
-                                                    ProblemFields.totalTime: mins[4],
-                                                    ProblemFields.problemLevel: _diffLevelTextController.text, // difficulty level
-                                                    ProblemFields.byYourself: _byYourself.name == "yes" ? "YES" : "NO",
-                                                    ProblemFields.category: _categoryTextController.text,
-                                                    ProblemFields.comment: commentWithDate,
-                                                };
+                                                final sheetHeaders = [
+                                                    ProblemFields.roadMap,
+                                                    ProblemFields.problemName,
+                                                    ProblemFields.problemCode,
+                                                    ProblemFields.problemSolution,
+                                                    ProblemFields.status,
+                                                    ProblemFields.submitCount,
+                                                    ProblemFields.readingTime,
+                                                    ProblemFields.thinkingTime,
+                                                    ProblemFields.codingTime,
+                                                    ProblemFields.debugTime,
+                                                    ProblemFields.totalTime,
+                                                    ProblemFields.problemLevel,
+                                                    ProblemFields.byYourself,
+                                                    ProblemFields.category,
+                                                    ProblemFields.comment,
+                                                    ProblemFields.resources,
+                                                    
+                                                ];
+                                                final rowValues = [ // storing all info in 2 lists to possibly be converted to Map<String, dynamic>
+                                                     _roadMapTextController.text == '' ? 'CF Contests' : _roadMapTextController.text, // if user sets destination to another worksheet than "External", then this field has to be filled with a number
+                                                    globals.problemName,
+                                                    probCode,
+                                                    '=HYPERLINK("$submissionLink", "$submissionCode")',
+                                                    _accepted.name == "yes" ? "AC" : "CS",
+                                                    submitCount,
+                                                    mins[0],
+                                                    mins[1],
+                                                    mins[2],
+                                                    mins[3],
+                                                    mins[4],
+                                                    _diffLevelTextController.text, // difficulty level
+                                                    _byYourself.name == "yes" ? "YES" : "NO",
+                                                    _categoryTextController.text,
+                                                    commentWithDate,
+                                                    "" // will be adjusted to tutorial link if the user is in a different worksheet than "External"
+                                                ];
                                                 try {
-                                                    await UserSheetsApi.insert([cf], justAppend: true);
+                                                    if (globals.externalWorksheet) {
+                                                      var map = {for (int i = 0 ; i < rowValues.length ; i++) sheetHeaders[i] : rowValues[i]};
+                                                      await UserSheetsApi.insert([map], justAppend: true);
+                                                    } else {
+                                                        int rowNum = rowValues.removeAt(0) as int; // "as int" to cast object to int
+                                                        await UserSheetsApi.update(rowValues, rowNum, chosenWorksheet);
+                                                    }
                                                     setState(() {
                                                         toast_file.displayResponsiveMotionToast(context, "Problem Solved!!!", "This problem's details have been added to sheets");
                                                     });
@@ -343,7 +370,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                                 decoration: InputDecoration(
                                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(15.0)), 
                                                     labelText: 'Road Map',  
-                                                    hintText: '(ex: CF Contests)',  
+                                                    hintText: globals.externalWorksheet ? '(#row in GSheets)' : '(ex: CF Contests)',  
                                                 ),
                                                 textAlign: TextAlign.center,
                                             ),
@@ -423,7 +450,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                                },
                                           ),
                                         ),
-
+                                        //to-do: add this logic here for globals.worhseetNames https://stackoverflow.com/questions/49273157/how-to-implement-drop-down-list-in-flutter
                                       ],
                                     ),
                                     const SizedBox(

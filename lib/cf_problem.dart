@@ -14,7 +14,7 @@ class ProblemFields {
     static const String byYourself = 'By Yourself?';
     static const String category = 'Category';
     static const String comment = 'Any Comments';
-
+    static const String resources = 'Helpful Resources';
     static List<String> getFields() => [
         roadMap,
         problemName,
@@ -30,6 +30,7 @@ class ProblemFields {
         problemLevel,
         byYourself,
         category,
-        comment
+        comment,
+        resources
     ];
 }

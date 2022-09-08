@@ -90,7 +90,8 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
     final _workSheetTextController = TextEditingController();  // for fetching current worksheet's name
     final _userNameTextController = TextEditingController(); // for fetching user's codeforces username
     String googleSheetsID = UserSheetsApi.getSheetId;
-
+    bool _sheetAvailable = (UserSheetsApi.getSheetId != '');
+    String chosenWorksheet = "";
 
     @override
     Widget build(BuildContext context) {
@@ -116,8 +117,8 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
                                             controller: _codeOrCredentialsTextController,
                                             decoration: InputDecoration(
                                                 border: const OutlineInputBorder(),  
-                                                labelText: (googleSheetsID == "") ? 'Credentials' : 'Problem Code',  
-                                                hintText: (googleSheetsID == "") ? 'JSON of service account' : 'found in codeforces url, ex: 713',  
+                                                labelText: (!_sheetAvailable) ? 'Credentials' : 'Problem Code',  
+                                                hintText: (!_sheetAvailable) ? 'JSON of service account' : 'found in codeforces url, ex: 713',  
                                             ),
                                         ),
                                         const Divider(
@@ -129,8 +130,8 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
                                                 controller: _typeOrSheetIdTextController,
                                                 decoration: InputDecoration(
                                                     border: const OutlineInputBorder(),  
-                                                    labelText: (googleSheetsID == "") ? 'Google Sheets ID' : 'Problem Level',  
-                                                    hintText: (googleSheetsID == "") ? 'string between d/ and /edit' : 'ex: A,B,C,...',  
+                                                    labelText: (!_sheetAvailable) ? 'Google Sheets ID' : 'Problem Level',  
+                                                    hintText: (!_sheetAvailable) ? 'string between d/ and /edit' : 'ex: A,B,C,...',  
                                                 ),
                                             cursorColor: Colors.blue,
                                             maxLines: 1,
@@ -140,7 +141,7 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
                                                 thickness: 0.4,
                                             ),
                                         ],
-                                        if (googleSheetsID != '') ... [
+                                        if (_sheetAvailable) ... [
                                             DropdownButton( // to-do: fix "A RenderFlex overflowed by 49 pixels on the right."
                                                 hint: const Text("Default: CF"),
                                                 value: _platform,
@@ -162,7 +163,7 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
                                         ),
                                         ] ,
                                         
-                                        if (googleSheetsID == "") ...[
+                                        if (!_sheetAvailable) ...[
                                             TextField(
                                                 controller: _workSheetTextController,
                                                 decoration: const InputDecoration(
@@ -199,31 +200,33 @@ class _AddProblemCodePopupCardState extends State<_AddProblemCodePopupCard> {
                                               Flexible(
                                                 flex: 1,
                                                 child: ElevatedButton(
-                                                    child: (googleSheetsID == "") ? const Text("Submit Info") : const Text("Change Info"),
+                                                    child: (!_sheetAvailable) ? const Text("Submit Info") : const Text("Change Info"),
                                                     style: ElevatedButton.styleFrom(
                                                         primary: Colors.blueGrey,
                                                     ),
-                                                    onPressed: () {
-                                                        if (googleSheetsID == "") {
-                                                            setState(() {
-                                                              googleSheetsID = _typeOrSheetIdTextController.text;
-                                                            });
+                                                    onPressed: () async {
+                                                        if (!_sheetAvailable) {
+                                                            googleSheetsID = _typeOrSheetIdTextController.text;
                                                             String creds = _codeOrCredentialsTextController.text;
                                                             String wsName = _workSheetTextController.text;
                                                             String cfName = _userNameTextController.text;
-                                                            UserSheetsApi.initFromUI(creds, googleSheetsID, wsName, cfName);
-                                                            toast_file.displayResponsiveMotionToast(context, "Welcome $cfName!!!", 'You will remain signed in until you press "change info"');
+                                                            await UserSheetsApi.initFromUI(creds, googleSheetsID, wsName, cfName);
                                                             _codeOrCredentialsTextController.text = '';
                                                             _typeOrSheetIdTextController.text = '';
+                                                            setState(() {
+                                                              _sheetAvailable = true;
+                                                              globals.worksheetNames = UserSheetsApi.getWorksheetNames;
+                                                              toast_file.displayResponsiveMotionToast(context, "Welcome $cfName!!!", 'You will remain signed in until you press "change info"');
+                                                            });
                                                         } else {
                                                             setState(() {
-                                                              googleSheetsID = "";
+                                                              _sheetAvailable = false; // to-do: change logic so that if the user clicks out of card without changing info, it reverts back and _sheetAvailable is true again
                                                             });
                                                         }
                                                     },
                                                 ),
                                               ),
-                                              if (googleSheetsID != '') Flexible(
+                                              if (_sheetAvailable) Flexible(
                                                 flex: 1,
                                                 child: ElevatedButton(
                                                     child: const Text('Track'),

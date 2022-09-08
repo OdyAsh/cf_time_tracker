@@ -5,13 +5,15 @@ import 'cf_problem.dart';
 
 class UserSheetsApi { // source: https://www.youtube.com/watch?v=3UJ6RnWTGIY
     static var _credentials = '';
+    static var _spreadsheet;
     static var _spreadSheetId = '';
     static var _workSheetName = '';
     static var _cfUsername = '';
     static var _box;
     static var _gsheets;
     static Worksheet? _workSheet; // name of worksheet (tabs at the bottom), eg: "External", "CF-A", etc
-    
+    static List<dynamic> _worksheetNames = [];
+
     static Future initFromLocal() async {
         try {
             _box = await Hive.openBox(
@@ -28,8 +30,15 @@ class UserSheetsApi { // source: https://www.youtube.com/watch?v=3UJ6RnWTGIY
             _cfUsername = info['cfUsername'];
 
             _gsheets = GSheets(_credentials); // all spreadsheets that the google service account can edit are now accessible 
-            final spreadsheet = await _gsheets.spreadsheet(_spreadSheetId); // selecting a specific spreadsheet with its id
-            _workSheet = await _getWorkSheet(spreadsheet, title: _workSheetName);
+            _spreadsheet = await _gsheets.spreadsheet(_spreadSheetId); // selecting a specific spreadsheet with its id
+            _workSheet = await _getWorkSheet(_spreadsheet, title: _workSheetName);
+            _worksheetNames = _spreadsheet.sheets;
+            for (int i = 0 ; i < _worksheetNames.length ; i++)
+            {
+                print(_worksheetNames[i]);
+                _worksheetNames[i] = _worksheetNames[i].title;
+                print(_worksheetNames[i]);
+            }
             //final firstRow = ProblemFields.getFields(); // uncomment these 2 lines if you want to add a header row 
             //_workSheet!.values.insertRow(1, firstRow);
         } catch(e) {
@@ -86,5 +95,14 @@ class UserSheetsApi { // source: https://www.youtube.com/watch?v=3UJ6RnWTGIY
          _workSheet!.values.map.insertRow(i, rowList[0]); // insert row at the first row that doesn't have any data
     }
 
+    static Future update(List<dynamic> newRow, int rowNum, String worksheetName) async {
+        _workSheet = await _getWorkSheet(_spreadsheet, title: _workSheetName);
+        final oldRow = await _workSheet!.values.row(rowNum);
+        newRow[1] = oldRow[1]; // problem code
+        newRow[_workSheet!.columnCount-1] = oldRow[_workSheet!.columnCount-2]; // tutorial copied from "any comments" column to "helpful resources" column
+        _workSheet!.values.insertRow(rowNum, newRow);
+    }
+
     static get getSheetId => _spreadSheetId;
+    static get getWorksheetNames => _worksheetNames;
 }
