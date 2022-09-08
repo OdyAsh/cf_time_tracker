@@ -23,7 +23,8 @@ Future main() async {
     double minWidth = 400, minHeight = 640;
     //setWindowMaxSize(const Size(max_width, max_height));
     setWindowMinSize(Size(minWidth, minHeight));
-    Size screenDimensions = await DesktopWindow.getWindowSize(); // actually gets app dimensions which is initially set to montior dimensions in "main.cpp" file (Win32Window::Size size(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));)
+    Size screenDimensions = await DesktopWindow.getWindowSize(); // actually gets app dimensions which is initially set to monitor dimensions in "main.cpp" file (Win32Window::Size size(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));)
+    // to-do: get monitor dimensions (1920x1080) in a different way, so that we can leave Win32Window::Size size(x, y) where x, y are manual pixel values, instead of the entire monitor size 
     double screenWidth = screenDimensions.width;
     double screenHeight = screenDimensions.height;
     double appWidth = screenWidth/2.15;
