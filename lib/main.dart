@@ -75,7 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
     CardItem(id: 2, solvingStage: "Coding", timer: StopWatchTimer()),
     CardItem(id: 3, solvingStage: "Debugging", timer: StopWatchTimer()),
   ];
-  String chosenWorksheet = "CF-A";
+  String? chosenWorksheet;
 
   @override
   void dispose() {
@@ -113,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           floatingActionButton: const AddProblemCodeButton(),
           body: Column( children: [ // to do: make the timer cards centered not left aligned
-            const SizedBox(height: 50), // gives space between app bar and cards
+            const SizedBox(height: 20), // gives space between app bar and cards
             Padding(
               padding: const EdgeInsets.only(left: 20.0),
               child: SizedBox(
@@ -336,7 +336,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                                       await UserSheetsApi.insert([map], justAppend: true);
                                                     } else {
                                                         int rowNum = rowValues.removeAt(0) as int; // "as int" to cast object to int
-                                                        await UserSheetsApi.update(rowValues, rowNum, chosenWorksheet);
+                                                        if (chosenWorksheet is! String) {
+                                                            chosenWorksheet = "CF-A";
+                                                        }
+                                                        await UserSheetsApi.update(rowValues, rowNum, chosenWorksheet!);
                                                     }
                                                     setState(() {
                                                         toast_file.displayResponsiveMotionToast(context, "Problem Solved!!!", "This problem's details have been added to sheets");
@@ -432,25 +435,43 @@ class _MyHomePageState extends State<MyHomePage> {
                                         ),
                                         Flexible(
                                           flex: 3,
-                                          child: DropdownButton(
-                                              hint: const Text("Date Format "),
-                                              value: _dateFormatVal,
-                                              icon: const Icon(Icons.calendar_month),
-                                              iconSize: 18.0,
-                                              alignment: Alignment.center,
-                                              items: const [
-                                                  DropdownMenuItem(value: 1, child: Text("D/M/Y H:M")),
-                                                  DropdownMenuItem(value: 2, child: Text("M/D/Y H:M")),
-                                                  DropdownMenuItem(value: 3, child: Text("Y/M/D H:M")),
-                                              ], 
-                                              onChanged: (int? value) { 
-                                                  setState(() {
-                                                      _dateFormatVal = value;
-                                                  });
-                                               },
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              DropdownButton(
+                                                  hint: const Text("Date Format "),
+                                                  value: _dateFormatVal,
+                                                  icon: const Icon(Icons.calendar_month),
+                                                  iconSize: 18.0,
+                                                  alignment: Alignment.center,
+                                                  items: const [
+                                                      DropdownMenuItem(value: 1, child: Text("D/M/Y H:M")),
+                                                      DropdownMenuItem(value: 2, child: Text("M/D/Y H:M")),
+                                                      DropdownMenuItem(value: 3, child: Text("Y/M/D H:M")),
+                                                  ], 
+                                                  onChanged: (int? value) { 
+                                                      setState(() {
+                                                          _dateFormatVal = value;
+                                                      });
+                                                   },
+                                              ),
+                                              DropdownButton(
+                                                  hint: const Text("Worksheet?"),
+                                                  value: chosenWorksheet,
+                                                  alignment: Alignment.center,
+                                                  items: <String>[...globals.worksheetNames].map((String value) { // source: https://stackoverflow.com/questions/49273157/how-to-implement-drop-down-list-in-flutter
+                                                      return DropdownMenuItem<String>( // to-do: understand why globals.wsn doesn't work, while [...globals.wsn] does
+                                                          value: value,
+                                                          child: Text(value),
+                                                      );
+                                                  }).toList(),
+                                                  onChanged: (String? value) {setState(() {
+                                                    chosenWorksheet = value;
+                                                  });},
+                                              ),
+                                            ],
                                           ),
-                                        ),
-                                        //to-do: add this logic here for globals.worhseetNames https://stackoverflow.com/questions/49273157/how-to-implement-drop-down-list-in-flutter
+                                        )
                                       ],
                                     ),
                                     const SizedBox(

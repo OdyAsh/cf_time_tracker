@@ -32,13 +32,14 @@ class UserSheetsApi { // source: https://www.youtube.com/watch?v=3UJ6RnWTGIY
             _gsheets = GSheets(_credentials); // all spreadsheets that the google service account can edit are now accessible 
             _spreadsheet = await _gsheets.spreadsheet(_spreadSheetId); // selecting a specific spreadsheet with its id
             _workSheet = await _getWorkSheet(_spreadsheet, title: _workSheetName);
-            _worksheetNames = _spreadsheet.sheets;
-            for (int i = 0 ; i < _worksheetNames.length ; i++)
+            var worksheets = _spreadsheet.sheets;
+            _worksheetNames.clear();
+            for (int i = 0 ; i < worksheets.length ; i++)
             {
-                print(_worksheetNames[i]);
-                _worksheetNames[i] = _worksheetNames[i].title;
-                print(_worksheetNames[i]);
+                print(worksheets[i]);
+                _worksheetNames.add(worksheets[i].title);
             }
+            print(_worksheetNames);
             //final firstRow = ProblemFields.getFields(); // uncomment these 2 lines if you want to add a header row 
             //_workSheet!.values.insertRow(1, firstRow);
         } catch(e) {
