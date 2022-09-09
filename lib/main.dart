@@ -75,7 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
     CardItem(id: 2, solvingStage: "Coding", timer: StopWatchTimer()),
     CardItem(id: 3, solvingStage: "Debugging", timer: StopWatchTimer()),
   ];
-  String? chosenWorksheet;
+  String? chosenWorksheet = "External";
 
   @override
   void dispose() {
@@ -112,482 +112,485 @@ class _MyHomePageState extends State<MyHomePage> {
             title: Text(widget.title),
           ),
           floatingActionButton: const AddProblemCodeButton(),
-          body: Column( children: [ // to do: make the timer cards centered not left aligned
-            const SizedBox(height: 20), // gives space between app bar and cards
-            Padding(
-              padding: const EdgeInsets.only(left: 20.0),
-              child: SizedBox(
-                  // the cards layed out horizontally
-                  height: 150, // ensures cards don't use height of entire app
-                  child: ScrollConfiguration(
-                    // workaround as horizontal scrolling isn't working in flutter desktop apps
-                    behavior: ScrollConfiguration.of(context).copyWith(
-                      dragDevices: {
-                        PointerDeviceKind.mouse,
-                        PointerDeviceKind.touch,
-                      },
-                    ),
-                    child: ListView.separated(
-                      // if you want resizable cards, replace this (and remove Container() parent) with SingleChildScrollView() (but note that this will render all cards) (source: https://youtu.be/baA_J5tUtEU?t=190)
-                      clipBehavior: Clip.none,
-                      scrollDirection: Axis.horizontal,
-                      itemBuilder: (context, index) =>
-                          _buildCard(item: items[index], app: this),
-                      separatorBuilder: (context, _) => const SizedBox(
-                          width:
-                              12), //separation between cards is an invisible box of width 12
-                      itemCount: 4,
-                    ),
-                  )),
-            ),
-            const SizedBox(height: 30),
-            SizedBox(
-                child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  // pause button
-                  child: const Icon(Icons.pause),
-                  onPressed: () {
-                    for (var item in items) {
-                      item.timer.onExecute
-                          .add(StopWatchExecute.stop); // pauses all timers
-                    }
-                  },
-                ),
-                ElevatedButton(
-                  // reset button
-                  style: ElevatedButton.styleFrom(
-                    primary: Colors.blueGrey,
-                  ), // finish button
-                  child: const Icon(Icons.restart_alt_rounded),                 
-                  onPressed: () {
-                    for (var item in items) {
-                      item.timer.onExecute.add(
-                          StopWatchExecute.reset); // resets all timers to 0
-                    }
-                  },
-
-                ),
-              ],
-            )),
-            const SizedBox(height: 30),
-            ValueListenableBuilder( // Class that enables changes on returned widget to appear in the UI if a valueListenable changes, source: https://stackoverflow.com/questions/62007967/updating-a-widget-when-a-global-variable-changes-async-in-flutter
-                valueListenable: globals.problemNameCard, // note: search term used to know this info: "refresh when a variable changes flutter"
-                builder: (context, value, widget) { // to do: logic that animates card getting bigger/smaller
-                    return Visibility(
-                        visible: globals.problemNameCard.value,
-                        child: SizedBox( // the if() makes the problem name card not visible unless "track" button is pressed
-                          width: 400,
-                          child: Material(
-                              color: Colors.white,
-                              elevation: 5,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(32)),
-                              child: Padding(
-                                  padding: const EdgeInsets.all(18.0),
-                                  child: Column(children: [
-                                  Text(
-                                      globals.problemName,
-                                      style: const TextStyle(fontSize: 20, color: Colors.black),
-                                      textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(
-                                      height:
-                                          20), // space between problem name and check mark
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                        ElevatedButton(
-                                          // cancel button
-                                          onPressed: () {
-                                            globals.problemNameCard.value = false;
-                                            globals.problemCode = '...';
-                                            globals.problemDiv = '...';
-                                            globals.problemLevel = '...';
-                                            globals.problemName = '...';
-                                            globals.problemLink = '...';
-                                            _roadMapTextController.text = '';
-                                            _diffLevelTextController.text = '';
-                                            _categoryTextController.text = '';
-                                            _commentTextController.text = '';
-                                            _byYourself = ByYourself.yes;
-                                            _dateFormatVal = null;
-                                            _solutionCodeCard = false;
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                          primary: Colors.red,
-                                          ), // finish button
-                                          child: const Icon(Icons.cancel),
-                                      ),
-                                      ElevatedButton(
-                                          // finish button
-                                          style: ElevatedButton.styleFrom(
-                                          primary: !_solutionCodeCard ? Colors.green : Colors.green[800],
-                                          ), // finish button
-                                          child: !_solutionCodeCard ? const Icon(Icons.check_circle_outline_sharp) : const Icon(Icons.check),
-                                          onPressed: () async {
-                                            if (!_solutionCodeCard) { 
-                                                setState(() {
-                                                    _solutionCodeCard = true;
-                                                });
-                                            } else {
-                                                List<String> mins = []; // storing timers' info as minutes
-                                                double secOverMin = 0;
-                                                // ignore: unused_local_variable, added this comment to avoid vs code false warning 
-                                                double minutes = 0;
-                                                double totalTime = 0;
-                                                for (var item in items) {
-                                                    minutes = double.parse(StopWatchTimer.getDisplayTimeMinute(item.timer.rawTime.value)); // source: https://stackoverflow.com/questions/72231057/stop-watch-timer-on-flutter-how-can-i-print-the-time-in-the-terminal-while-pres
-                                                    secOverMin = double.parse(StopWatchTimer.getDisplayTimeSecond(item.timer.rawTime.value)) / 60.0;
-                                                    minutes += secOverMin;
-                                                    String minApp = minutes.toStringAsFixed(1); //ex: 1 minute, 32 seconds, will mean that seconds == 92, so minutes == 1.33333, which will be 1.3 
-                                                    mins.add(minApp); 
-                                                    totalTime += double.parse(minApp);
-                                                }
-                                                mins.add(totalTime.toStringAsFixed(1));
-
-                                                DateTime currTime = DateTime.now(); // getting current day with requested format
-                                                // ignore: unused_local_variable, added this comment to avoid vs code false warning 
-                                                String dateFormatted = "";
-                                                switch (_dateFormatVal) {
-                                                    case 1:
-                                                    dateFormatted = formatDate(currTime, [dd, '/', mm, '/', yyyy, ' ', HH, ':', nn]);
-                                                    break;
-                                                    case 2:
-                                                    dateFormatted = formatDate(currTime, [mm, '/', dd, '/', yyyy, ' ', HH, ':', nn]);
-                                                    break;
-                                                    case 3:
-                                                    dateFormatted = formatDate(currTime, [yyyy, '/', mm, '/', dd, ' ', HH, ':', nn]);
-                                                    break;
-                                                    default:
-                                                    dateFormatted = formatDate(currTime, [dd, '/', mm, '/', yyyy, ' ', HH, ':', nn]);
-                                                }
-
-                                                // to-do: add logic to get submission link for CSES (Note: It's not easy :])
-                                                final response = await http.get(Uri.parse('https://codeforces.com/submissions/OdyAsh')); // getting submission link and submission count. Source: https://www.youtube.com/watch?v=9ZfRE_DN9a0
-                                                dom.Document html = dom.Document.html(response.body);
-                                                final subProbNames = html
-                                                    .querySelectorAll("table > tbody > tr > td > a") // right click problem name in the inspector, copy as selector, then trim the following (by trial and error) until you obtain required tds: '#pageContent > div.datatable > div:nth-child(6) > table > tbody > tr:nth-child(38) > td:nth-child(4) > a'
-                                                    .map((finalTag) => finalTag.innerHtml.trim())
-                                                    .toList();
-                                                int i = 0, submitCount = 0;
-                                                String submissionLink = 'https://codeforces.com/contest/${globals.problemCode}/submission/';
-                                                String submissionCode = '';
-                                                for (final prob in subProbNames) {
-                                                    if (prob.contains(globals.problemName.substring(globals.problemName.indexOf('.')+2))) {
-                                                        submitCount++;
-                                                        if (submissionLink[submissionLink.length-1] == '/') {
-                                                            submissionCode = subProbNames[i-2];
-                                                            submissionLink += submissionCode;
-                                                        }
-                                                    }
-                                                    i++;
-                                                }
-
-                                                String commentWithDate = '$dateFormatted, ${_commentTextController.text}';
-
-                                                String? probCode;
-                                                if (globals.platform == "CSES") {
-                                                    probCode = '=HYPERLINK("${globals.problemLink}", "CSES-${globals.problemDiv}-${globals.problemCode}")';
-                                                } else {
-                                                    probCode = '=HYPERLINK("${globals.problemLink}", "CF${globals.problemCode}-${globals.problemDiv}-${globals.problemLevel!.toUpperCase()}")';
-                                                }
-                                                final sheetHeaders = [
-                                                    ProblemFields.roadMap,
-                                                    ProblemFields.problemName,
-                                                    ProblemFields.problemCode,
-                                                    ProblemFields.problemSolution,
-                                                    ProblemFields.status,
-                                                    ProblemFields.submitCount,
-                                                    ProblemFields.readingTime,
-                                                    ProblemFields.thinkingTime,
-                                                    ProblemFields.codingTime,
-                                                    ProblemFields.debugTime,
-                                                    ProblemFields.totalTime,
-                                                    ProblemFields.problemLevel,
-                                                    ProblemFields.byYourself,
-                                                    ProblemFields.category,
-                                                    ProblemFields.comment,
-                                                    ProblemFields.resources,
-                                                    
-                                                ];
-                                                final rowValues = [ // storing all info in 2 lists to possibly be converted to Map<String, dynamic>
-                                                     _roadMapTextController.text == '' ? 'CF Contests' : _roadMapTextController.text, // if user sets destination to another worksheet than "External", then this field has to be filled with a number
-                                                    globals.problemName,
-                                                    probCode,
-                                                    '=HYPERLINK("$submissionLink", "$submissionCode")',
-                                                    _accepted.name == "yes" ? "AC" : "CS",
-                                                    submitCount,
-                                                    mins[0],
-                                                    mins[1],
-                                                    mins[2],
-                                                    mins[3],
-                                                    mins[4],
-                                                    _diffLevelTextController.text, // difficulty level
-                                                    _byYourself.name == "yes" ? "YES" : "NO",
-                                                    _categoryTextController.text,
-                                                    commentWithDate,
-                                                    "" // will be adjusted to tutorial link if the user is in a different worksheet than "External"
-                                                ];
-                                                try {
-                                                    if (globals.externalWorksheet) {
-                                                      var map = {for (int i = 0 ; i < rowValues.length ; i++) sheetHeaders[i] : rowValues[i]};
-                                                      await UserSheetsApi.insert([map], justAppend: true);
-                                                    } else {
-                                                        int rowNum = rowValues.removeAt(0) as int; // "as int" to cast object to int
-                                                        if (chosenWorksheet is! String) {
-                                                            chosenWorksheet = "CF-A";
-                                                        }
-                                                        await UserSheetsApi.update(rowValues, rowNum, chosenWorksheet!);
-                                                    }
-                                                    setState(() {
-                                                        toast_file.displayResponsiveMotionToast(context, "Problem Solved!!!", "This problem's details have been added to sheets");
-                                                    });
-                                                } catch(e) {
-                                                    print(e);
-                                                }
-                                            }
-                                            
-                                          },
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(
-                                      height:
-                                          20), // space between buttons and solution code textfield
-                                  if (_solutionCodeCard) ...[ // using "...[]" to make multiple widgets appear using if condition. Source: https://stackoverflow.com/questions/49713189/how-to-use-conditional-statement-within-child-attribute-of-a-flutter-widget-cen#:~:text=1%20more%20comment-,169,if%20%2F%20else,-Column(%0A%20%20%20%20children%3A%20%5B%0A%20%20%20%20%20%20%20%20if
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Flexible(
-                                          flex: 2,
-                                          child: Focus(
-                                            onFocusChange: (hasFocus) {
-                                              if (!hasFocus) {
-                                                // to do: function that validates submission link
-                                              }
-                                            },
-                                            child: TextField(
-                                                controller: _roadMapTextController,
-                                                decoration: InputDecoration(
-                                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15.0)), 
-                                                    labelText: 'Road Map',  
-                                                    hintText: globals.externalWorksheet ? '(#row in GSheets)' : '(ex: CF Contests)',  
-                                                ),
-                                                textAlign: TextAlign.center,
-                                            ),
-                                          ),
-                                        ),
-                                        const Flexible(
-                                            flex: 1,
-                                            child: SizedBox(
-                                                width: 20,
-                                            )
-                                        ),
-                                        Flexible(
-                                          flex: 2,
-                                          child: TextField(
-                                              controller: _diffLevelTextController,
-                                              decoration: InputDecoration(
-                                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15.0)), 
-                                                  labelText: 'Difficulty Level',  
-                                                  hintText: '(ex: 1.5)',  
-                                              ),
-                                              textAlign: TextAlign.center,
-                                              onSubmitted: (String text) {
-                                                  setState(() {
-                                                      // to do: color border to green
-                                                  });
-                                              }
-                                          ),
-                                        ),
-                                      ],
+          body: SingleChildScrollView(
+            child: Column( children: [ // to do: make the timer cards centered not left aligned
+              const SizedBox(height: 20), // gives space between app bar and cards
+              Padding(
+                padding: const EdgeInsets.only(left: 20.0),
+                child: SizedBox(
+                    // the cards layed out horizontally
+                    height: 150, // ensures cards don't use height of entire app
+                    child: ScrollConfiguration(
+                      // workaround as horizontal scrolling isn't working in flutter desktop apps
+                      behavior: ScrollConfiguration.of(context).copyWith(
+                        dragDevices: {
+                          PointerDeviceKind.mouse,
+                          PointerDeviceKind.touch,
+                        },
+                      ),
+                      child: ListView.separated(
+                        // if you want resizable cards, replace this (and remove Container() parent) with SingleChildScrollView() (but note that this will render all cards) (source: https://youtu.be/baA_J5tUtEU?t=190)
+                        clipBehavior: Clip.none,
+                        scrollDirection: Axis.horizontal,
+                        itemBuilder: (context, index) =>
+                            _buildCard(item: items[index], app: this),
+                        separatorBuilder: (context, _) => const SizedBox(
+                            width:
+                                12), //separation between cards is an invisible box of width 12
+                        itemCount: 4,
+                      ),
+                    )),
+              ),
+              const SizedBox(height: 30),
+              SizedBox(
+                  child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    // pause button
+                    child: const Icon(Icons.pause),
+                    onPressed: () {
+                      for (var item in items) {
+                        item.timer.onExecute
+                            .add(StopWatchExecute.stop); // pauses all timers
+                      }
+                    },
+                  ),
+                  ElevatedButton(
+                    // reset button
+                    style: ElevatedButton.styleFrom(
+                      primary: Colors.blueGrey,
+                    ), // finish button
+                    child: const Icon(Icons.restart_alt_rounded),                 
+                    onPressed: () {
+                      for (var item in items) {
+                        item.timer.onExecute.add(
+                            StopWatchExecute.reset); // resets all timers to 0
+                      }
+                    },
+          
+                  ),
+                ],
+              )),
+              const SizedBox(height: 30),
+              ValueListenableBuilder( // Class that enables changes on returned widget to appear in the UI if a valueListenable changes, source: https://stackoverflow.com/questions/62007967/updating-a-widget-when-a-global-variable-changes-async-in-flutter
+                  valueListenable: globals.problemNameCard, // note: search term used to know this info: "refresh when a variable changes flutter"
+                  builder: (context, value, widget) { // to do: logic that animates card getting bigger/smaller
+                      return Visibility(
+                          visible: globals.problemNameCard.value,
+                          child: SizedBox( // the if() makes the problem name card not visible unless "track" button is pressed
+                            width: 400,
+                            child: Material(
+                                color: Colors.white,
+                                elevation: 5,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(32)),
+                                child: Padding(
+                                    padding: const EdgeInsets.all(18.0),
+                                    child: Column(children: [
+                                    Text(
+                                        globals.problemName,
+                                        style: const TextStyle(fontSize: 20, color: Colors.black),
+                                        textAlign: TextAlign.center,
                                     ),
                                     const SizedBox(
-                                      height:
-                                          20),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Flexible(
-                                          flex: 4,
-                                          child: TextField(
-                                              controller: _categoryTextController,
-                                              decoration: InputDecoration(
-                                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15.0)), 
-                                                  labelText: 'Category',  
-                                                  hintText: '(ex: impl, dp, greedy)',  
-                                              ),
-                                              textAlign: TextAlign.center,
-                                              onSubmitted: (String text) {
-                                                  setState(() {
-                                                      // to do: color border to green
-                                                  });
-                                              }
-                                          ),
-                                        ),
-                                        const Flexible(
-                                            flex: 1,
-                                            child: SizedBox(
-                                                width: 20,
-                                            )
-                                        ),
-                                        Flexible(
-                                          flex: 3,
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              DropdownButton(
-                                                  hint: const Text("Date Format "),
-                                                  value: _dateFormatVal,
-                                                  icon: const Icon(Icons.calendar_month),
-                                                  iconSize: 18.0,
-                                                  alignment: Alignment.center,
-                                                  items: const [
-                                                      DropdownMenuItem(value: 1, child: Text("D/M/Y H:M")),
-                                                      DropdownMenuItem(value: 2, child: Text("M/D/Y H:M")),
-                                                      DropdownMenuItem(value: 3, child: Text("Y/M/D H:M")),
-                                                  ], 
-                                                  onChanged: (int? value) { 
-                                                      setState(() {
-                                                          _dateFormatVal = value;
-                                                      });
-                                                   },
-                                              ),
-                                              DropdownButton(
-                                                  hint: const Text("Worksheet?"),
-                                                  value: chosenWorksheet,
-                                                  alignment: Alignment.center,
-                                                  items: <String>[...globals.worksheetNames].map((String value) { // source: https://stackoverflow.com/questions/49273157/how-to-implement-drop-down-list-in-flutter
-                                                      return DropdownMenuItem<String>( // to-do: understand why globals.wsn doesn't work, while [...globals.wsn] does
-                                                          value: value,
-                                                          child: Text(value),
-                                                      );
-                                                  }).toList(),
-                                                  onChanged: (String? value) {setState(() {
-                                                    chosenWorksheet = value;
-                                                  });},
-                                              ),
-                                            ],
-                                          ),
-                                        )
-                                      ],
-                                    ),
-                                    const SizedBox(
-                                      height:
-                                          20),
+                                        height:
+                                            20), // space between problem name and check mark
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                       children: [
-                                        Flexible(
-                                          flex: 1,
-                                            child: Column(
-                                                children: [
-                                                    const Text("Accepted?", style: TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold),),
-                                                    Row(
-                                                        mainAxisAlignment: MainAxisAlignment.center,
-                                                        children: [
-                                                            Column(
-                                                              children: [
-                                                                Radio(
-                                                                    value: Accepted.yes,
-                                                                    groupValue: _accepted,
-                                                                    activeColor: MaterialStateColor.resolveWith((states) => Colors.green),
-                                                                    onChanged: (Accepted? val) {
-                                                                        setState(() {
-                                                                          _accepted = val!;
-                                                                        });
-                                                                    },
-                                                                ),
-                                                                const Icon(Icons.check_circle_outline_sharp, color: Colors.green),
-                                                              ],
-                                                            ),
-                                                            Column(
-                                                              children: [
-                                                                Radio(
-                                                                    value: Accepted.no,
-                                                                    groupValue: _accepted,
-                                                                    activeColor: MaterialStateColor.resolveWith((states) => Colors.red),
-                                                                    onChanged: (Accepted? val) {
-                                                                        setState(() {
-                                                                          _accepted = val!;
-                                                                        });
-                                                                    },
-                                                                ),
-                                                                const Icon(Icons.cancel_outlined, color: Colors.red),
-                                                              ],
-                                                            ),
-                                                        ],
-                                                    ),
-                                                ],
-                                            )
+                                          ElevatedButton(
+                                            // cancel button
+                                            onPressed: () {
+                                              globals.problemNameCard.value = false;
+                                              globals.problemCode = '...';
+                                              globals.problemDiv = '...';
+                                              globals.problemLevel = '...';
+                                              globals.problemName = '...';
+                                              globals.problemLink = '...';
+                                              _roadMapTextController.text = '';
+                                              _diffLevelTextController.text = '';
+                                              _categoryTextController.text = '';
+                                              _commentTextController.text = '';
+                                              _byYourself = ByYourself.yes;
+                                              _dateFormatVal = null;
+                                              _solutionCodeCard = false;
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                            primary: Colors.red,
+                                            ), // finish button
+                                            child: const Icon(Icons.cancel),
                                         ),
-                                        Flexible(
-                                            flex: 1,
-                                            child: Column(
-                                                children: [
-                                                    const Text("By Yourself?", style: TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold),),
-                                                    Row(
-                                                        mainAxisAlignment: MainAxisAlignment.center,
-                                                        children: [
-                                                            Column(
-                                                              children: [
-                                                                Radio(
-                                                                    value: ByYourself.yes,
-                                                                    groupValue: _byYourself,
-                                                                    activeColor: MaterialStateColor.resolveWith((states) => Colors.green),
-                                                                    onChanged: (ByYourself? val) {
-                                                                        setState(() {
-                                                                          _byYourself = val!;
-                                                                        });
-                                                                    },
-                                                                ),
-                                                                const Icon(Icons.check_circle_outline_sharp, color: Colors.green),
-                                                              ],
-                                                            ),
-                                                            Column(
-                                                              children: [
-                                                                Radio(
-                                                                    value: ByYourself.no,
-                                                                    groupValue: _byYourself,
-                                                                    activeColor: MaterialStateColor.resolveWith((states) => Colors.red),
-                                                                    onChanged: (ByYourself? val) {
-                                                                        setState(() {
-                                                                          _byYourself = val!;
-                                                                        });
-                                                                    },
-                                                                ),
-                                                                const Icon(Icons.cancel_outlined, color: Colors.red),
-                                                              ],
-                                                            ),
-                                                        ],
-                                                    ),
-                                                ],
-                                            )
-                                        )
+                                        ElevatedButton(
+                                            // finish button
+                                            style: ElevatedButton.styleFrom(
+                                            primary: !_solutionCodeCard ? Colors.green : Colors.green[800],
+                                            ), // finish button
+                                            child: !_solutionCodeCard ? const Icon(Icons.check_circle_outline_sharp) : const Icon(Icons.check),
+                                            onPressed: () async {
+                                              if (!_solutionCodeCard) { 
+                                                  setState(() {
+                                                      _solutionCodeCard = true;
+                                                  });
+                                              } else {
+                                                  List<String> mins = []; // storing timers' info as minutes
+                                                  double secOverMin = 0;
+                                                  // ignore: unused_local_variable, added this comment to avoid vs code false warning 
+                                                  double minutes = 0;
+                                                  double totalTime = 0;
+                                                  for (var item in items) {
+                                                      minutes = double.parse(StopWatchTimer.getDisplayTimeMinute(item.timer.rawTime.value)); // source: https://stackoverflow.com/questions/72231057/stop-watch-timer-on-flutter-how-can-i-print-the-time-in-the-terminal-while-pres
+                                                      secOverMin = double.parse(StopWatchTimer.getDisplayTimeSecond(item.timer.rawTime.value)) / 60.0;
+                                                      minutes += secOverMin;
+                                                      String minApp = minutes.toStringAsFixed(1); //ex: 1 minute, 32 seconds, will mean that seconds == 92, so minutes == 1.33333, which will be 1.3 
+                                                      mins.add(minApp); 
+                                                      totalTime += double.parse(minApp);
+                                                  }
+                                                  mins.add(totalTime.toStringAsFixed(1));
+          
+                                                  DateTime currTime = DateTime.now(); // getting current day with requested format
+                                                  // ignore: unused_local_variable, added this comment to avoid vs code false warning 
+                                                  String dateFormatted = "";
+                                                  switch (_dateFormatVal) {
+                                                      case 1:
+                                                      dateFormatted = formatDate(currTime, [dd, '/', mm, '/', yyyy, ' ', HH, ':', nn]);
+                                                      break;
+                                                      case 2:
+                                                      dateFormatted = formatDate(currTime, [mm, '/', dd, '/', yyyy, ' ', HH, ':', nn]);
+                                                      break;
+                                                      case 3:
+                                                      dateFormatted = formatDate(currTime, [yyyy, '/', mm, '/', dd, ' ', HH, ':', nn]);
+                                                      break;
+                                                      default:
+                                                      dateFormatted = formatDate(currTime, [dd, '/', mm, '/', yyyy, ' ', HH, ':', nn]);
+                                                  }
+          
+                                                  // to-do: add logic to get submission link for CSES (Note: It's not easy :])
+                                                  final response = await http.get(Uri.parse('https://codeforces.com/submissions/OdyAsh')); // getting submission link and submission count. Source: https://www.youtube.com/watch?v=9ZfRE_DN9a0
+                                                  dom.Document html = dom.Document.html(response.body);
+                                                  final subProbNames = html
+                                                      .querySelectorAll("table > tbody > tr > td > a") // right click problem name in the inspector, copy as selector, then trim the following (by trial and error) until you obtain required tds: '#pageContent > div.datatable > div:nth-child(6) > table > tbody > tr:nth-child(38) > td:nth-child(4) > a'
+                                                      .map((finalTag) => finalTag.innerHtml.trim())
+                                                      .toList();
+                                                  int i = 0, submitCount = 0;
+                                                  String submissionLink = 'https://codeforces.com/contest/${globals.problemCode}/submission/';
+                                                  String submissionCode = '';
+                                                  for (final prob in subProbNames) {
+                                                      if (prob.contains(globals.problemName.substring(globals.problemName.indexOf('.')+2))) {
+                                                          submitCount++;
+                                                          if (submissionLink[submissionLink.length-1] == '/') {
+                                                              submissionCode = subProbNames[i-2];
+                                                              submissionLink += submissionCode;
+                                                          }
+                                                      }
+                                                      i++;
+                                                  }
+          
+                                                  String commentWithDate = '$dateFormatted, ${_commentTextController.text}';
+          
+                                                  String? probCode;
+                                                  if (globals.platform == "CSES") {
+                                                      probCode = '=HYPERLINK("${globals.problemLink}", "CSES-${globals.problemDiv}-${globals.problemCode}")';
+                                                  } else {
+                                                      probCode = '=HYPERLINK("${globals.problemLink}", "CF${globals.problemCode}-${globals.problemDiv}-${globals.problemLevel!.toUpperCase()}")';
+                                                  }
+                                                  final sheetHeaders = [
+                                                      ProblemFields.roadMap,
+                                                      ProblemFields.problemName,
+                                                      ProblemFields.problemCode,
+                                                      ProblemFields.problemSolution,
+                                                      ProblemFields.status,
+                                                      ProblemFields.submitCount,
+                                                      ProblemFields.readingTime,
+                                                      ProblemFields.thinkingTime,
+                                                      ProblemFields.codingTime,
+                                                      ProblemFields.debugTime,
+                                                      ProblemFields.totalTime,
+                                                      ProblemFields.problemLevel,
+                                                      ProblemFields.byYourself,
+                                                      ProblemFields.category,
+                                                      ProblemFields.comment,
+                                                      ProblemFields.resources,
+                                                      
+                                                  ];
+                                                  final rowValues = [ // storing all info in 2 lists to possibly be converted to Map<String, dynamic>
+                                                       _roadMapTextController.text == '' ? 'CF Contests' : _roadMapTextController.text, // if user sets destination to another worksheet than "External", then this field has to be filled with a number
+                                                      globals.problemName,
+                                                      probCode,
+                                                      '=HYPERLINK("$submissionLink", "$submissionCode")',
+                                                      _accepted.name == "yes" ? "AC" : "CS",
+                                                      submitCount,
+                                                      mins[0],
+                                                      mins[1],
+                                                      mins[2],
+                                                      mins[3],
+                                                      mins[4],
+                                                      _diffLevelTextController.text, // difficulty level
+                                                      _byYourself.name == "yes" ? "YES" : "NO",
+                                                      _categoryTextController.text,
+                                                      commentWithDate,
+                                                      "" // will be adjusted to tutorial link if the user is in a different worksheet than "External"
+                                                  ];
+                                                  try {
+                                                      if (chosenWorksheet == 'External') {
+                                                        var map = {for (int i = 0 ; i < rowValues.length ; i++) sheetHeaders[i] : rowValues[i]};
+                                                        await UserSheetsApi.insert([map], justAppend: true);
+                                                      } else {
+                                                          var rowNum = rowValues.removeAt(0); 
+                                                          if (chosenWorksheet is! String) {
+                                                              chosenWorksheet = "CF-A";
+                                                          }
+
+                                                          await UserSheetsApi.update(rowValues, rowNum, chosenWorksheet!);
+                                                      }
+                                                      setState(() {
+                                                          toast_file.displayResponsiveMotionToast(context, "Problem Solved!!!", "This problem's details have been added to sheets");
+                                                      });
+                                                  } catch(e) {
+                                                      print(e);
+                                                  }
+                                              }
+                                              
+                                            },
+                                        ),
                                       ],
                                     ),
-                                    const SizedBox(height: 20),
-                                    TextField(
-                                        controller: _commentTextController,
-                                        decoration: InputDecoration(
-                                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),  
-                                                labelText: 'Comment',  
-                                                hintText: 'ex: hints on how you solved the problem, corner cases',  
-                                                hintStyle: const TextStyle(fontSize: 14.0),
+                                    const SizedBox(
+                                        height:
+                                            20), // space between buttons and solution code textfield
+                                    if (_solutionCodeCard) ...[ // using "...[]" to make multiple widgets appear using if condition. Source: https://stackoverflow.com/questions/49713189/how-to-use-conditional-statement-within-child-attribute-of-a-flutter-widget-cen#:~:text=1%20more%20comment-,169,if%20%2F%20else,-Column(%0A%20%20%20%20children%3A%20%5B%0A%20%20%20%20%20%20%20%20if
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Flexible(
+                                            flex: 2,
+                                            child: Focus(
+                                              onFocusChange: (hasFocus) {
+                                                if (!hasFocus) {
+                                                  // to do: function that validates submission link
+                                                }
+                                              },
+                                              child: TextField(
+                                                  controller: _roadMapTextController,
+                                                  decoration: InputDecoration(
+                                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15.0)), 
+                                                      labelText: chosenWorksheet == 'External' ? 'Road Map' : 'Row Number',  
+                                                      hintText: chosenWorksheet == 'External' ? '(ex: CF Contests)' : '(GSheets #row)',  
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                              ),
                                             ),
-                                            cursorColor: Colors.blue,
-                                            minLines: 1,
-                                            maxLines: 2,
-                                    )
-                                  ]
-                                  ]),
-                        ))),
-                    );
-                }
-            )
-          ]),
+                                          ),
+                                          const Flexible(
+                                              flex: 1,
+                                              child: SizedBox(
+                                                  width: 20,
+                                              )
+                                          ),
+                                          Flexible(
+                                            flex: 2,
+                                            child: TextField(
+                                                controller: _diffLevelTextController,
+                                                decoration: InputDecoration(
+                                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15.0)), 
+                                                    labelText: 'Difficulty Level',  
+                                                    hintText: '(ex: 1.5)',  
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                onSubmitted: (String text) {
+                                                    setState(() {
+                                                        // to do: color border to green
+                                                    });
+                                                }
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(
+                                        height:
+                                            20),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Flexible(
+                                            flex: 4,
+                                            child: TextField(
+                                                controller: _categoryTextController,
+                                                decoration: InputDecoration(
+                                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15.0)), 
+                                                    labelText: 'Category',  
+                                                    hintText: '(ex: impl, dp, greedy)',  
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                onSubmitted: (String text) {
+                                                    setState(() {
+                                                        // to do: color border to green
+                                                    });
+                                                }
+                                            ),
+                                          ),
+                                          const Flexible(
+                                              flex: 1,
+                                              child: SizedBox(
+                                                  width: 20,
+                                              )
+                                          ),
+                                          Flexible(
+                                            flex: 3,
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                DropdownButton(
+                                                    hint: const Text("Date Format "),
+                                                    value: _dateFormatVal,
+                                                    icon: const Icon(Icons.calendar_month),
+                                                    iconSize: 18.0,
+                                                    alignment: Alignment.center,
+                                                    items: const [
+                                                        DropdownMenuItem(value: 1, child: Text("D/M/Y H:M")),
+                                                        DropdownMenuItem(value: 2, child: Text("M/D/Y H:M")),
+                                                        DropdownMenuItem(value: 3, child: Text("Y/M/D H:M")),
+                                                    ], 
+                                                    onChanged: (int? value) { 
+                                                        setState(() {
+                                                            _dateFormatVal = value;
+                                                        });
+                                                     },
+                                                ),
+                                                DropdownButton(
+                                                    hint: chosenWorksheet is String ? Text(chosenWorksheet!) : const Text("Worksheet?"),
+                                                    value: chosenWorksheet,
+                                                    alignment: Alignment.center,
+                                                    items: <String>[...globals.worksheetNames].map((String value) { // source: https://stackoverflow.com/questions/49273157/how-to-implement-drop-down-list-in-flutter
+                                                        return DropdownMenuItem<String>( // to-do: understand why globals.wsn doesn't work, while [...globals.wsn] does
+                                                            value: value,
+                                                            child: Text(value),
+                                                        );
+                                                    }).toList(),
+                                                    onChanged: (String? value) {setState(() {
+                                                      chosenWorksheet = value;
+                                                    });},
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        ],
+                                      ),
+                                      const SizedBox(
+                                        height:
+                                            20),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                        children: [
+                                          Flexible(
+                                            flex: 1,
+                                              child: Column(
+                                                  children: [
+                                                      const Text("Accepted?", style: TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold),),
+                                                      Row(
+                                                          mainAxisAlignment: MainAxisAlignment.center,
+                                                          children: [
+                                                              Column(
+                                                                children: [
+                                                                  Radio(
+                                                                      value: Accepted.yes,
+                                                                      groupValue: _accepted,
+                                                                      activeColor: MaterialStateColor.resolveWith((states) => Colors.green),
+                                                                      onChanged: (Accepted? val) {
+                                                                          setState(() {
+                                                                            _accepted = val!;
+                                                                          });
+                                                                      },
+                                                                  ),
+                                                                  const Icon(Icons.check_circle_outline_sharp, color: Colors.green),
+                                                                ],
+                                                              ),
+                                                              Column(
+                                                                children: [
+                                                                  Radio(
+                                                                      value: Accepted.no,
+                                                                      groupValue: _accepted,
+                                                                      activeColor: MaterialStateColor.resolveWith((states) => Colors.red),
+                                                                      onChanged: (Accepted? val) {
+                                                                          setState(() {
+                                                                            _accepted = val!;
+                                                                          });
+                                                                      },
+                                                                  ),
+                                                                  const Icon(Icons.cancel_outlined, color: Colors.red),
+                                                                ],
+                                                              ),
+                                                          ],
+                                                      ),
+                                                  ],
+                                              )
+                                          ),
+                                          Flexible(
+                                              flex: 1,
+                                              child: Column(
+                                                  children: [
+                                                      const Text("By Yourself?", style: TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold),),
+                                                      Row(
+                                                          mainAxisAlignment: MainAxisAlignment.center,
+                                                          children: [
+                                                              Column(
+                                                                children: [
+                                                                  Radio(
+                                                                      value: ByYourself.yes,
+                                                                      groupValue: _byYourself,
+                                                                      activeColor: MaterialStateColor.resolveWith((states) => Colors.green),
+                                                                      onChanged: (ByYourself? val) {
+                                                                          setState(() {
+                                                                            _byYourself = val!;
+                                                                          });
+                                                                      },
+                                                                  ),
+                                                                  const Icon(Icons.check_circle_outline_sharp, color: Colors.green),
+                                                                ],
+                                                              ),
+                                                              Column(
+                                                                children: [
+                                                                  Radio(
+                                                                      value: ByYourself.no,
+                                                                      groupValue: _byYourself,
+                                                                      activeColor: MaterialStateColor.resolveWith((states) => Colors.red),
+                                                                      onChanged: (ByYourself? val) {
+                                                                          setState(() {
+                                                                            _byYourself = val!;
+                                                                          });
+                                                                      },
+                                                                  ),
+                                                                  const Icon(Icons.cancel_outlined, color: Colors.red),
+                                                                ],
+                                                              ),
+                                                          ],
+                                                      ),
+                                                  ],
+                                              )
+                                          )
+                                        ],
+                                      ),
+                                      const SizedBox(height: 20),
+                                      TextField(
+                                          controller: _commentTextController,
+                                          decoration: InputDecoration(
+                                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),  
+                                                  labelText: 'Comment',  
+                                                  hintText: 'ex: hints on how you solved the problem, corner cases',  
+                                                  hintStyle: const TextStyle(fontSize: 14.0),
+                                              ),
+                                              cursorColor: Colors.blue,
+                                              minLines: 1,
+                                              maxLines: 2,
+                                      )
+                                    ]
+                                    ]),
+                          ))),
+                      );
+                  }
+              )
+            ]),
+          ),
         ));
   }
 }

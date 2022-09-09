@@ -72,6 +72,8 @@ class UserSheetsApi { // source: https://www.youtube.com/watch?v=3UJ6RnWTGIY
     }
 
     static Future insert(List<Map<String, dynamic>> rowList, {bool justAppend = false}) async {
+        _workSheetName = "External";
+        _workSheet = await _getWorkSheet(_spreadsheet, title: _workSheetName);
         if (_workSheet == null) {
           return;
         }
@@ -96,12 +98,16 @@ class UserSheetsApi { // source: https://www.youtube.com/watch?v=3UJ6RnWTGIY
          _workSheet!.values.map.insertRow(i, rowList[0]); // insert row at the first row that doesn't have any data
     }
 
-    static Future update(List<dynamic> newRow, int rowNum, String worksheetName) async {
-        _workSheet = await _getWorkSheet(_spreadsheet, title: _workSheetName);
-        final oldRow = await _workSheet!.values.row(rowNum);
+    static Future update(List<dynamic> newRow, var rowNum, String worksheetName) async {
+        if (worksheetName != _workSheetName) {
+            _workSheetName = worksheetName;
+            _workSheet = await _getWorkSheet(_spreadsheet, title: _workSheetName);
+        }
+        final oldRow = await _workSheet!.values.row(int.parse(rowNum));
         newRow[1] = oldRow[1]; // problem code
-        newRow[_workSheet!.columnCount-1] = oldRow[_workSheet!.columnCount-2]; // tutorial copied from "any comments" column to "helpful resources" column
-        _workSheet!.values.insertRow(rowNum, newRow);
+        newRow[newRow.length-1] = oldRow[oldRow.length-1]; // tutorial copied from "any comments" column to "helpful resources" column
+        //^^ to-do: the tutorial copied is text only, not HYPERLINK(), so we should try to add that
+        _workSheet!.values.insertRow(int.parse(rowNum), newRow, fromColumn: 1);
     }
 
     static get getSheetId => _spreadSheetId;

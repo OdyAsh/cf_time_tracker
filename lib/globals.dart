@@ -6,5 +6,4 @@ String problemName = "...";
 String problemDiv = "...";
 String problemLink = "...";
 String? platform = "...";
-bool externalWorksheet = true;
 var worksheetNames = [];
