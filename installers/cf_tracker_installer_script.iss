@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "problem_tracker"
-#define MyAppVersion "2.0"
+#define MyAppVersion "0.2"
 #define MyAppPublisher "OdyAsh"
 #define MyAppURL "https://www.linkedin.com/in/ashrafharess/"
 #define MyAppExeName "problem_tracker.exe"
