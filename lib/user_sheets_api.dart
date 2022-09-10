@@ -1,7 +1,7 @@
-import 'package:cf_tracker/cf_problem.dart';
+import 'package:cf_tracker/problem_details.dart';
 import 'package:gsheets/gsheets.dart';
 import 'package:hive/hive.dart';
-import 'cf_problem.dart';
+import 'problem_details.dart';
 
 class UserSheetsApi { // source: https://www.youtube.com/watch?v=3UJ6RnWTGIY
     static var _credentials = '';

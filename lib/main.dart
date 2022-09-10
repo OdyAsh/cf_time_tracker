@@ -8,10 +8,10 @@ import 'dart:ui';
 import 'package:window_size/window_size.dart';
 import 'package:desktop_window/desktop_window.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'add_problem.dart'; // implementation from "fun with flutter": https://www.youtube.com/watch?v=Bxs8Zy2O4wk
+import 'add_problem_button.dart'; // implementation from "fun with flutter": https://www.youtube.com/watch?v=Bxs8Zy2O4wk
 import 'globals.dart' as globals; // use of globals using a "globals" file: https://stackoverflow.com/questions/29182581/global-variables-in-dart
 import 'user_sheets_api.dart';
-import 'cf_problem.dart';
+import 'problem_details.dart';
 import 'motion_toast.dart' as toast_file;
 
 Future main() async {
@@ -20,7 +20,7 @@ Future main() async {
   await UserSheetsApi.initFromLocal();
   globals.worksheetNames = UserSheetsApi.getWorksheetNames;
   if (Platform.isWindows) {
-    setWindowTitle('cf_time_tracker');
+    setWindowTitle('problem_tracker');
     double minWidth = 400, minHeight = 640;
     //setWindowMaxSize(const Size(max_width, max_height));
     setWindowMinSize(Size(minWidth, minHeight));
@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: const MyHomePage(title: 'Problem Details'),
-      title: 'cf_time_tracker',
+      title: 'problem_tracker',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
