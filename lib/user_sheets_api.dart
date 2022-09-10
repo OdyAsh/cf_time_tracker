@@ -71,6 +71,7 @@ class UserSheetsApi { // source: https://www.youtube.com/watch?v=3UJ6RnWTGIY
         }
     }
 
+    // inserts a new row of problem's details that's solved for the first time, NOT for updating existing problems (used in "External" worksheet only)
     static Future insert(List<Map<String, dynamic>> rowList, {bool justAppend = false}) async {
         _workSheetName = "External";
         _workSheet = await _getWorkSheet(_spreadsheet, title: _workSheetName);
@@ -98,6 +99,7 @@ class UserSheetsApi { // source: https://www.youtube.com/watch?v=3UJ6RnWTGIY
          _workSheet!.values.map.insertRow(i, rowList[0]); // insert row at the first row that doesn't have any data
     }
 
+    // this function is for changing problems that haven't been solved before, NOT for updating already solved problems (in worksheets other than "External") 
     static Future update(List<dynamic> newRow, var rowNum, String worksheetName) async {
         if (worksheetName != _workSheetName) {
             _workSheetName = worksheetName;
