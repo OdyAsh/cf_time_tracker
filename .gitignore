@@ -47,5 +47,5 @@ app.*.map.json
 /android/app/release
 
 secret*
-installers/
-appScreenshots/
+# installers/
+# appScreenshots/
