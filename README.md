@@ -29,7 +29,7 @@
 
 ## How To Use
 
-1. Download and extract the zip file from [here](https://github.com/OdyAsh/problem_tracker/blob/main/installers/cf_tracker_installer.zip)
+1. Download and open the installer exe file from [here](https://github.com/OdyAsh/problem_tracker/blob/main/installers/problem_tracker_installer.exe)
 
 2. Install the app:
 
