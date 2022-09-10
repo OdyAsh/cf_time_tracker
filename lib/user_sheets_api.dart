@@ -106,7 +106,6 @@ class UserSheetsApi { // source: https://www.youtube.com/watch?v=3UJ6RnWTGIY
             _workSheet = await _getWorkSheet(_spreadsheet, title: _workSheetName);
         }
         final oldRow = await _workSheet!.values.row(int.parse(rowNum));
-        newRow[1] = oldRow[1]; // problem code
         newRow[newRow.length-1] = oldRow[oldRow.length-1]; // tutorial copied from "any comments" column to "helpful resources" column
         //^^ to-do: the tutorial copied is text only, not HYPERLINK(), so we should try to add that
         _workSheet!.values.insertRow(int.parse(rowNum), newRow, fromColumn: 1);
