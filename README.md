@@ -97,6 +97,7 @@ for Mac:
 Then you will find the executable file here: ```build/LINUX (or MACOS)/runner/release```
 
 ## "To-Do"s
+* Make the app a little wider when it starts
 * Be able to add submission link of CSES problem to google sheets 
 * Be able to add tutorial link that was present in google sheets as a `=HYPERLINK(...)` instead of just text, and move it to "Resources" column
 * Make the app available on Android
