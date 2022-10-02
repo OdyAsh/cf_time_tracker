@@ -51,12 +51,17 @@
 
 ![screenshot](https://github.com/OdyAsh/problem_tracker/blob/main/appScreenshots/3%20see%20video.png)
 
-6. Paste the obtained credentials (step 5), google sheet's id (step 4), the name of the worksheet ("External"), and your CodeForces handle (username) to the app, then choose a problem:
+6. Paste the obtained credentials (step 5), google sheet's id (step 4), the name of the worksheet ("External"), and your CodeForces handle (username) to the app: 
 
-![screenshot](https://github.com/OdyAsh/problem_tracker/blob/main/appScreenshots/4%20paste-info-to-app.gif)
+![screenshot](https://github.com/OdyAsh/problem_tracker/blob/main/appScreenshots/4.1%20paste-info-to-app.png)
 
 **Note:**
+You will do this step only when you open the app for the first time. After that, you'll just do step 7.
 
+7. choose a problem using code and difficulty level:
+![screenshot](https://github.com/OdyAsh/problem_tracker/blob/main/appScreenshots/4.2%20choose-problem.gif)
+
+**Note:**
 ![screenshot](https://github.com/OdyAsh/problem_tracker/blob/main/appScreenshots/5%20info-storage-location.png)
 
 **v2.0 Note:**
